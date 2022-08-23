@@ -32,27 +32,27 @@ conf-cc conf-ld warn-auto.sh
 	) > auto-ccld.sh
 
 auto-int: \
-load auto-int.o substdio.a error.a str.a fs.a
-	./load auto-int substdio.a error.a str.a fs.a 
+load auto-int.o
+	./load auto-int -lskarnet
 
 auto-int.o: \
-compile auto-int.c substdio.h readwrite.h exit.h scan.h fmt.h
+compile auto-int.c
 	./compile auto-int.c
 
 auto-int8: \
-load auto-int8.o substdio.a error.a str.a fs.a
-	./load auto-int8 substdio.a error.a str.a fs.a 
+load auto-int8.o
+	./load auto-int8 -lskarnet
 
 auto-int8.o: \
-compile auto-int8.c substdio.h readwrite.h exit.h scan.h fmt.h
+compile auto-int8.c
 	./compile auto-int8.c
 
 auto-str: \
-load auto-str.o substdio.a error.a str.a
-	./load auto-str substdio.a error.a str.a 
+load auto-str.o
+	./load auto-str -lskarnet
 
 auto-str.o: \
-compile auto-str.c substdio.h readwrite.h exit.h
+compile auto-str.c
 	./compile auto-str.c
 
 auto_break.c: \
@@ -219,9 +219,8 @@ binm3+df.sh conf-qmail
 	chmod 755 binm3+df
 
 bouncesaying: \
-load bouncesaying.o strerr.a error.a substdio.a str.a wait.a
-	./load bouncesaying strerr.a error.a substdio.a str.a \
-	wait.a 
+load bouncesaying.o
+	./load bouncesaying -lskarnet
 
 bouncesaying.0: \
 bouncesaying.1
@@ -319,8 +318,8 @@ it man
 	./instcheck
 
 chkspawn: \
-load chkspawn.o substdio.a error.a str.a fs.a auto_spawn.o
-	./load chkspawn substdio.a error.a str.a fs.a auto_spawn.o 
+load chkspawn.o auto_spawn.o
+	./load chkspawn auto_spawn.o -lskarnet
 
 chkspawn.o: \
 compile chkspawn.c substdio.h subfd.h substdio.h fmt.h select.h \

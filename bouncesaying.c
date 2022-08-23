@@ -1,39 +1,55 @@
+#if 0
 #include "fork.h"
 #include "strerr.h"
 #include "error.h"
 #include "wait.h"
 #include "sig.h"
 #include "exit.h"
+#include "error_temp.h"
 
 #define FATAL "bouncesaying: fatal: "
+#endif
+
+#include <unistd.h>
+
+#include <skalibs/strerr2.h>
+#include <skalibs/djbunix.h>
+#include <skalibs/error.h>
+
+#define USAGE "bouncesaying error [ program [ arg ... ] ]";
 
 int main(int argc, char **argv)
 {
-  int pid;
-  int wstat;
+    int pid;
+    int wstat;
+    PROG = "bouncesaying";
+    if (argc == 1)
+        strerr_dieusage(100, USAGE);
 
-  if (argc == 1)
-    strerr_die1x(100,"bouncesaying: usage: bouncesaying error [ program [ arg ... ] ]");
-
-  if (argv[2]) {
-    pid = fork();
-    if (pid == -1)
-      strerr_die2sys(111,FATAL,"unable to fork: ");
-    if (pid == 0) {
-      execvp(argv[2],argv + 2);
-      if (error_temp(errno)) _exit(111);
-      _exit(100);
+    if (argv[2]) {
+        pid = fork();
+        if (pid == -1)
+            strerr_diefu1sys(111, "fork");
+        if (pid == 0) {
+            execvp(argv[2], argv + 2);
+            if (error_temp(errno))
+                _exit(111);
+            _exit(100);
+        }
+        if (wait_pid(&wstat, pid) == -1)
+            strerr_dief1x(111, "wait failed");
+        if (wait_crashed(wstat))
+            strerr_dief1x(111, "child crashed");
+        switch(wait_exitcode(wstat)) {
+            case 0:
+                break;
+            case 111:
+                strerr_dief1x(111, "temporary child error");
+                /* not reached, so no fallthrough */
+            default:
+                _exit(0);
+        }
     }
-    if (wait_pid(&wstat,pid) == -1)
-      strerr_die2x(111,FATAL,"wait failed");
-    if (wait_crashed(wstat))
-      strerr_die2x(111,FATAL,"child crashed");
-    switch(wait_exitcode(wstat)) {
-      case 0: break;
-      case 111: strerr_die2x(111,FATAL,"temporary child error");
-      default: _exit(0);
-    }
-  }
 
-  strerr_die1x(100,argv[1]);
+    strerr_die1x(100, argv[1]);
 }
