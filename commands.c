@@ -1,42 +1,56 @@
 #include "commands.h"
-
+#if 0
 #include "substdio.h"
 #include "stralloc.h"
 #include "str.h"
 #include "case.h"
+#endif
 
-static stralloc cmd = {0};
+#include <skalibs/stralloc.h>
+#include <skalibs/buffer.h>
+#include <skalibs/djbunix.h>
+#include <skalibs/bytestr.h>
 
-int commands(ss,c)
-substdio *ss;
-struct commands *c;
+static stralloc cmd = STRALLOC_ZERO;
+
+int commands(buffer *ss, struct commands *c)
 {
   unsigned int i;
   char *arg;
 
   for (;;) {
-    if (!stralloc_copys(&cmd,"")) return -1;
+    if (!stralloc_copys(&cmd, ""))
+      return -1;
 
     for (;;) {
       int j;
-      if (!stralloc_readyplus(&cmd,1)) return -1;
-      j = substdio_get(ss,cmd.s + cmd.len,1);
-      if (j != 1) return j;
-      if (cmd.s[cmd.len] == '\n') break;
+      if (!stralloc_readyplus(&cmd, 1))
+        return -1;
+      j = buffer_get(ss, cmd.s + cmd.len, 1);
+      if (j != 1)
+        return j;
+      if (cmd.s[cmd.len] == '\n')
+        break;
       ++cmd.len;
     }
 
-    if (cmd.len > 0) if (cmd.s[cmd.len - 1] == '\r') --cmd.len;
+    if (cmd.len > 0)
+      if (cmd.s[cmd.len - 1] == '\r')
+        --cmd.len;
 
     cmd.s[cmd.len] = 0;
 
-    i = str_chr(cmd.s,' ');
+    i = str_chr(cmd.s, ' ');
     arg = cmd.s + i;
-    while (*arg == ' ') ++arg;
+    while (*arg == ' ')
+      ++arg;
     cmd.s[i] = 0;
 
-    for (i = 0;c[i].text;++i) if (case_equals(c[i].text,cmd.s)) break;
+    for (i = 0; c[i].text; ++i)
+      if (case_equals(c[i].text, cmd.s))
+        break;
     c[i].fun(arg);
-    if (c[i].flush) c[i].flush();
+    if (c[i].flush)
+      c[i].flush();
   }
 }

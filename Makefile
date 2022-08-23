@@ -336,8 +336,7 @@ compile coe.c coe.h
 	./compile coe.c
 
 commands.o: \
-compile commands.c commands.h substdio.h stralloc.h gen_alloc.h str.h \
-case.h
+compile commands.c commands.h
 	./compile commands.c
 
 compile: \
