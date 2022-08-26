@@ -49,7 +49,7 @@ extern void substdio_seek();
   )
 
 extern int substdio_copy();
-#endif 
+#endif
 
 int buffer_copy(buffer *bout, buffer *bin);
 

@@ -8,7 +8,7 @@ int buffer_copy(buffer *bout, buffer *bin)
   struct iovec v[2];
 
   for (;;) {
-    ssize_t n; 
+    ssize_t n;
     if (buffer_isempty(bin)) {
       n = buffer_fill(ssin);
       if (n < 0) return -2;
