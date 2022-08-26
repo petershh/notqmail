@@ -1,13 +1,23 @@
 #include "qmail.h"
 
-#include "substdio.h"
+#if 0
 #include "readwrite.h"
-#include "wait.h"
 #include "exit.h"
 #include "fork.h"
 #include "fd.h"
-#include "auto_qmail.h"
 #include "env.h"
+#endif
+
+#include <unistd.h>
+
+#include <skalibs/buffer.h>
+#include <skalibs/djbunix.h>
+#include <skalibs/env.h>
+
+#include "substdio.h"
+#include "wait.h"
+#include "auto_qmail.h"
+
 
 static char *binqqargs[2] = { 0, 0 } ;
 
@@ -19,8 +29,7 @@ static void setup_qqargs()
     binqqargs[0] = "bin/qmail-queue";
 }
 
-int qmail_open(qq)
-struct qmail *qq;
+int qmail_open(struct qmail *qq)
 {
   int pim[2];
   int pie[2];
@@ -28,8 +37,13 @@ struct qmail *qq;
 
   setup_qqargs();
 
-  if (pipe(pim) == -1) return -1;
-  if (pipe(pie) == -1) { close(pim[0]); close(pim[1]); return -1; }
+  if (pipe(pim) == -1)
+    return -1;
+  if (pipe(pie) == -1) {
+    close(pim[0]);
+    close(pim[1]);
+    return -1;
+  }
   if (pipe(pierr) == -1) {
     close(pim[0]); close(pim[1]);
     close(pie[0]); close(pie[1]);
@@ -46,79 +60,79 @@ struct qmail *qq;
       close(pim[1]);
       close(pie[1]);
       close(pierr[0]); /* we want to receive data */
-      if (fd_move(0,pim[0]) == -1) _exit(120);
-      if (fd_move(1,pie[0]) == -1) _exit(120);
-      if (fd_move(6,pierr[1]) == -1) _exit(120);
+      if (fd_move(0, pim[0]) == -1) _exit(120);
+      if (fd_move(1, pie[0]) == -1) _exit(120);
+      if (fd_move(6, pierr[1]) == -1) _exit(120);
       if (chdir(auto_qmail) == -1) _exit(61);
-      execv(*binqqargs,binqqargs);
+      execv(*binqqargs, binqqargs);
       _exit(120);
   }
 
   qq->fdm = pim[1]; close(pim[0]);
   qq->fde = pie[1]; close(pie[0]);
   qq->fderr = pierr[0]; close(pierr[1]);
-  substdio_fdbuf(&qq->ss,write,qq->fdm,qq->buf,sizeof(qq->buf));
+  buffer_init(&qq->b, buffer_write, qq->fdm, qq->buf, sizeof(qq->buf));
   qq->flagerr = 0;
   return 0;
 }
 
-unsigned long qmail_qp(qq) struct qmail *qq;
+unsigned long qmail_qp(struct qmail *qq)
 {
   return qq->pid;
 }
 
-void qmail_fail(qq) struct qmail *qq;
+void qmail_fail(struct qmail *qq)
 {
   qq->flagerr = 1;
 }
 
 void qmail_put(struct qmail *qq, char *s, size_t len)
 {
-  if (!qq->flagerr) if (substdio_put(&qq->ss,s,len) == -1) qq->flagerr = 1;
+  if (!qq->flagerr) if (buffer_put(&qq->b, s, len) == -1) qq->flagerr = 1;
 }
 
-void qmail_from(qq,s) struct qmail *qq; char *s;
+void qmail_from(struct qmail *qq, char *s)
 {
-  if (substdio_flush(&qq->ss) == -1) qq->flagerr = 1;
+  if (buffer_flush(&qq->b) == -1) qq->flagerr = 1;
   close(qq->fdm);
-  substdio_fdbuf(&qq->ss,write,qq->fde,qq->buf,sizeof(qq->buf));
-  qmail_put(qq,"F",1);
-  qmail_puts(qq,s);
-  qmail_put(qq,"",1);
+  buffer_init(&qq->b, buffer_write, qq->fde, qq->buf, sizeof(qq->buf));
+  qmail_put(qq, "F", 1);
+  qmail_puts(qq, s);
+  qmail_put(qq, "", 1);
 }
 
-void qmail_to(qq,s) struct qmail *qq; char *s;
+void qmail_to(struct qmail *qq, char *s)
 {
-  qmail_put(qq,"T",1);
-  qmail_puts(qq,s);
-  qmail_put(qq,"",1);
+  qmail_put(qq, "T", 1);
+  qmail_puts(qq, s);
+  qmail_put(qq, "", 1);
 }
 
-static size_t qmail_errstr(struct qmail *qq, char *s) {
+static size_t qmail_errstr(struct qmail *qq, char *s)
+{
   size_t len = 0;
-  substdio_fdbuf(&qq->ss,read,qq->fderr,qq->buf,sizeof(qq->buf));
-  while (substdio_get(&qq->ss,s+len,1) > 0 && len < 255) {
+  buffer_init(&qq->b, buffer_read, qq->fderr, qq->buf, sizeof(qq->buf));
+  while (buffer_get(&qq->b, s + len, 1) > 0 && len < 255) {
     len++;
   }
   s[len] = '\0';
   return len;
 }
 
-char *qmail_close(qq)
-struct qmail *qq;
+char *qmail_close(struct qmail *qq)
 {
   int wstat;
   int exitcode;
   static char errstr[256];
   size_t errlen;
 
-  qmail_put(qq,"",1);
-  if (!qq->flagerr) if (substdio_flush(&qq->ss) == -1) qq->flagerr = 1;
+  qmail_put(qq, "", 1);
+  if (!qq->flagerr) if (buffer_flush(&qq->b) == -1) qq->flagerr = 1;
   close(qq->fde);
   errlen = qmail_errstr(qq, errstr);
   close(qq->fderr);
 
-  if (wait_pid(&wstat,qq->pid) != qq->pid)
+  if (wait_pid(qq->pid, &wstat) != qq->pid)
     return "Zqq waitpid surprise (#4.3.0)";
   if (wait_crashed(wstat))
     return "Zqq crashed (#4.3.0)";

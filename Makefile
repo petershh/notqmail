@@ -345,10 +345,8 @@ make-compile warn-auto.sh
 	chmod 755 compile
 
 condredirect: \
-load condredirect.o qmail.o strerr.a fd.a sig.a wait.a env.a \
-substdio.a error.a str.a fs.a auto_qmail.o
-	./load condredirect qmail.o strerr.a fd.a sig.a wait.a \
-	env.a substdio.a error.a str.a fs.a auto_qmail.o
+load condredirect.o qmail.o substdio_copy.o auto_qmail.o
+	./load condredirect qmail.o substdio_copy.o auto_qmail.o -lskarnet
 
 condredirect.0: \
 condredirect.1
