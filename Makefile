@@ -595,7 +595,7 @@ compile gfrom.c str.h gfrom.h
 	./compile gfrom.c
 
 gid.o: \
-compile gid.c uidgid.h subfd.h substdio.h exit.h
+compile gid.c uidgid.h
 	./compile gid.c
 
 hasflock.h: \
