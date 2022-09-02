@@ -578,8 +578,8 @@ scan_ulong.o scan_8long.o
 	fmt_ulong.o scan_ulong.o scan_8long.o
 
 getln.a: \
-makelib getln.o getln2.o
-	./makelib getln.a getln.o getln2.o
+makelib getln.a
+	./makelib getln.a getln.o
 
 getln.o: \
 compile getln.c substdio.h byte.h stralloc.h gen_alloc.h getln.h
