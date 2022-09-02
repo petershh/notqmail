@@ -504,14 +504,14 @@ compile error_temp.c error.h
 	./compile error_temp.c
 
 except: \
-load except.o strerr.a error.a substdio.a str.a wait.a
-	./load except strerr.a error.a substdio.a str.a wait.a 
+load except.o
+	./load except -lskarnet
 
 except.0: \
 except.1
 
 except.o: \
-compile except.c fork.h strerr.h wait.h error.h exit.h
+compile except.c wait.h
 	./compile except.c
 
 fd.a: \
