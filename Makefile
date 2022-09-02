@@ -649,8 +649,7 @@ trywaitp.c compile load
 	rm -f trywaitp.o trywaitp
 
 headerbody.o: \
-compile headerbody.c stralloc.h gen_alloc.h substdio.h getln.h \
-hfield.h headerbody.h
+compile headerbody.c getln.h hfield.h headerbody.h
 	./compile headerbody.c
 
 hfield.o: \

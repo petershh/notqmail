@@ -1,31 +1,31 @@
+#include <string.h>
+
+#include <skalibs/stralloc.h>
+#include <skalibs/buffer.h>
+
 #include "headerbody.h"
 
+#include "hfield.h"
+#include "getln.h"
+/*
 #include "stralloc.h"
 #include "substdio.h"
-#include "getln.h"
-#include "hfield.h"
+*/
 
-static int getsa(ss,sa,match)
-substdio *ss;
-stralloc *sa;
-int *match;
+static int getsa(buffer *b, stralloc *sa, int *match)
 {
  if (!*match) return 0;
- if (getln(ss,sa,match,'\n') == -1) return -1;
+ if (getln(b,sa,match,'\n') == -1) return -1;
  if (*match) return 1;
  if (!sa->len) return 0;
- if (!stralloc_append(sa,"\n")) return -1;
+ if (!stralloc_append(sa,'\n')) return -1;
  return 1;
 }
 
 static stralloc line = {0};
 static stralloc nextline = {0};
 
-int headerbody(ss,dohf,hdone,dobl)
-substdio *ss;
-void (*dohf)();
-void (*hdone)();
-void (*dobl)();
+int headerbody(buffer *b, void (*dohf)(), void (*hdone)(), void(*dobl)())
 {
  int match;
  int flaglineok;
@@ -33,7 +33,7 @@ void (*dobl)();
  flaglineok = 0;
  for (;;)
   {
-   switch(getsa(ss,&nextline,&match))
+   switch(getsa(b, &nextline, &match))
     {
      case -1:
        return -1;
@@ -58,7 +58,8 @@ void (*dobl)();
      dobl(&nextline);
      break;
     }
-   if (stralloc_starts(&nextline,"From "))
+   /* strlen("From ") == 5 */
+   if (nextline.len >= 5 && strncmp(nextline.s, "From ", 5) == 0)
     {
      if (!stralloc_copys(&line,"MBOX-Line: ")) return -1;
      if (!stralloc_cat(&line,&nextline)) return -1;
@@ -79,7 +80,7 @@ void (*dobl)();
    flaglineok = 1;
   }
  for (;;)
-   switch(getsa(ss,&nextline,&match))
+   switch(getsa(b,&nextline,&match))
     {
      case -1: return -1;
      case 0: return 0;
