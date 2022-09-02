@@ -558,17 +558,14 @@ forgeries.0: \
 forgeries.7
 
 forward: \
-load forward.o qmail.o strerr.a fd.a wait.a sig.a env.a \
-substdio.a error.a str.a fs.a auto_qmail.o
-	./load forward qmail.o strerr.a fd.a wait.a sig.a \
-	env.a substdio.a error.a str.a fs.a auto_qmail.o 
+load forward.o qmail.o sig.a substdio.a auto_qmail.o
+	./load forward qmail.o sig.a substdio.a auto_qmail.o -lskarnet
 
 forward.0: \
 forward.1
 
 forward.o: \
-compile forward.c sig.h readwrite.h env.h qmail.h substdio.h \
-strerr.h substdio.h fmt.h
+compile forward.c sig.h qmail.h \
 	./compile forward.c
 
 fs.a: \
