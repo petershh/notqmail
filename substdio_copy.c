@@ -14,7 +14,7 @@ int buffer_copy(buffer *bout, buffer *bin)
       if (n < 0) return -2;
       if (!n) return 0;
     }
-    buffer_wpeek(bin, v);
+    buffer_rpeek(bin, v);
     n = buffer_putvflush(bout, v, 2);
     if (n == -1)
       return -3;
