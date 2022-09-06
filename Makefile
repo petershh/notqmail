@@ -675,12 +675,12 @@ home+df.sh conf-qmail
 	chmod 755 home+df
 
 hostname: \
-load hostname.o substdio.a error.a str.a dns.lib socket.lib
-	./load hostname substdio.a error.a str.a  `cat dns.lib` \
+load hostname.o dns.lib socket.lib
+	./load hostname -lskarnet `cat dns.lib` \
 	`cat socket.lib`
 
 hostname.o: \
-compile hostname.c substdio.h subfd.h substdio.h readwrite.h
+compile hostname.c
 	./compile hostname.c
 
 install: \
