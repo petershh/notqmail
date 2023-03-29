@@ -752,10 +752,8 @@ stralloc.h gen_alloc.h ipme.h ip.h ipalloc.h
 	./compile ipme.c
 
 ipmeprint: \
-load ipmeprint.o ipme.o ip.o ipalloc.o stralloc.a substdio.a \
-error.a str.a fs.a socket.lib
-	./load ipmeprint ipme.o ip.o ipalloc.o stralloc.a \
-	substdio.a error.a str.a fs.a  `cat socket.lib`
+load ipmeprint.o ipme.o socket.lib
+	./load ipmeprint ipme.o `cat socket.lib` -lskarnet
 
 ipmeprint.o: \
 compile ipmeprint.c subfd.h substdio.h substdio.h ip.h ipme.h ip.h \
