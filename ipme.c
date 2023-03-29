@@ -34,7 +34,7 @@ int ipme_is(ip46 *ip)
   int i;
   if (ipme_init() != 1) return -1;
   for (i = 0; i < genalloc_len(struct ip_mx, &ipme); ++i)
-    if (!byte_diff(&genalloc_s(struct ip_mx, &ipme)[i].ip, 4, ip))
+    if (!byte_diff(&genalloc_s(struct ip_mx, &ipme)[i].ip, sizeof(ip46), ip))
       return 1;
   return 0;
 }
