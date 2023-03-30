@@ -1,15 +1,27 @@
 #include <sys/types.h>
+#include <signal.h>
+#include <unistd.h>
+
 #include <time.h>
-#include "datetime.h"
+/*
 #include "fork.h"
-#include "wait.h"
 #include "fd.h"
 #include "fmt.h"
 #include "sig.h"
-#include "strerr.h"
-#include "substdio.h"
 #include "subfd.h"
 #include "readwrite.h"
+*/
+
+#include <skalibs/buffer.h>
+#include <skalibs/strerr.h>
+#include <skalibs/sig.h>
+#include <skalibs/djbunix.h>
+#include <skalibs/types.h>
+
+#include "datetime.h"
+#include "strerr.h"
+#include "wait.h"
+#include "substdio.h"
 
 #define FATAL "predate: fatal: "
 
@@ -17,7 +29,7 @@ static char *montab[12] = {
 "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"
 };
 
-char num[FMT_ULONG];
+char num[ULONG_FMT];
 char outbuf[1024];
 
 int main(int argc, char **argv)
@@ -29,31 +41,33 @@ int main(int argc, char **argv)
   datetime_sec local;
   int minutes;
   int pi[2];
-  substdio ss;
+  buffer ss;
   int wstat;
   int pid;
 
-  sig_pipeignore();
+  PROG = "predate";
+
+  sig_ignore(SIGPIPE);
 
   if (!argv[1])
-    strerr_die1x(100,"predate: usage: predate child");
+    strerr_dieusage(100, "predate child");
 
   if (pipe(pi) == -1)
-    strerr_die2sys(111,FATAL,"unable to create pipe: ");
+    strerr_diefu1sys(111, "create pipe");
 
   switch(pid = fork()) {
     case -1:
-      strerr_die2sys(111,FATAL,"unable to fork: ");
+      strerr_diefu1sys(111, "fork");
     case 0:
       close(pi[1]);
       if (fd_move(0,pi[0]) == -1)
-	strerr_die2sys(111,FATAL,"unable to set up fds: ");
-      sig_pipedefault();
+        strerr_diefu1sys(111, "set up fds");
+      sig_restore(SIGPIPE);
       execvp(argv[1],argv + 1);
-      strerr_die4sys(111,FATAL,"unable to run ",argv[1],": ");
+      strerr_diefu2sys(111, "run ", argv[1]);
   }
   close(pi[0]);
-  substdio_fdbuf(&ss,write,pi[1],outbuf,sizeof(outbuf));
+  buffer_init(&ss, buffer_write, pi[1], outbuf, sizeof(outbuf));
 
   now = time(NULL);
 
@@ -75,40 +89,40 @@ int main(int argc, char **argv)
   dt.sec = tm->tm_sec;
   local = datetime_untai(&dt);
 
-  substdio_puts(&ss,"Date: ");
-  substdio_put(&ss,num,fmt_uint(num,dt.mday));
-  substdio_puts(&ss," ");
-  substdio_puts(&ss,montab[dt.mon]);
-  substdio_puts(&ss," ");
-  substdio_put(&ss,num,fmt_uint(num,dt.year + 1900));
-  substdio_puts(&ss," ");
-  substdio_put(&ss,num,fmt_uint0(num,dt.hour,2));
-  substdio_puts(&ss,":");
-  substdio_put(&ss,num,fmt_uint0(num,dt.min,2));
-  substdio_puts(&ss,":");
-  substdio_put(&ss,num,fmt_uint0(num,dt.sec,2));
+  buffer_puts(&ss,"Date: ");
+  buffer_put(&ss,num,uint_fmt(num,dt.mday));
+  buffer_puts(&ss," ");
+  buffer_puts(&ss,montab[dt.mon]);
+  buffer_puts(&ss," ");
+  buffer_put(&ss,num,uint_fmt(num,dt.year + 1900));
+  buffer_puts(&ss," ");
+  buffer_put(&ss,num,uint0_fmt(num,dt.hour,2));
+  buffer_puts(&ss,":");
+  buffer_put(&ss,num,uint0_fmt(num,dt.min,2));
+  buffer_puts(&ss,":");
+  buffer_put(&ss,num,uint0_fmt(num,dt.sec,2));
 
   if (local < utc) {
     minutes = (utc - local + 30) / 60;
-    substdio_puts(&ss," -");
-    substdio_put(&ss,num,fmt_uint0(num,minutes / 60,2));
-    substdio_put(&ss,num,fmt_uint0(num,minutes % 60,2));
+    buffer_puts(&ss," -");
+    buffer_put(&ss,num,uint0_fmt(num,minutes / 60,2));
+    buffer_put(&ss,num,uint0_fmt(num,minutes % 60,2));
   }
   else {
     minutes = (local - utc + 30) / 60;
-    substdio_puts(&ss," +");
-    substdio_put(&ss,num,fmt_uint0(num,minutes / 60,2));
-    substdio_put(&ss,num,fmt_uint0(num,minutes % 60,2));
+    buffer_puts(&ss," +");
+    buffer_put(&ss,num,uint0_fmt(num,minutes / 60,2));
+    buffer_put(&ss,num,uint0_fmt(num,minutes % 60,2));
   }
 
-  substdio_puts(&ss,"\n");
-  substdio_copy(&ss,subfdin);
-  substdio_flush(&ss);
+  buffer_puts(&ss,"\n");
+  buffer_copy(&ss, buffer_0);
+  buffer_flush(&ss);
   close(pi[1]);
 
-  if (wait_pid(&wstat,pid) == -1)
-    strerr_die2sys(111,FATAL,"wait failed: ");
+  if (waitpid_nointr(pid, &wstat, 0) == -1)
+    strerr_dief1sys(111, "wait failed");
   if (wait_crashed(wstat))
-    strerr_die2x(111,FATAL,"child crashed");
+    strerr_dief1x(111, "child crashed");
   return wait_exitcode(wstat);
 }

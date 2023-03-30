@@ -936,14 +936,11 @@ it man
 	./instpackage
 
 predate: \
-load predate.o datetime.a strerr.a sig.a fd.a wait.a substdio.a \
-error.a str.a fs.a
-	./load predate datetime.a strerr.a sig.a fd.a wait.a \
-	substdio.a error.a str.a fs.a 
+load predate.o datetime.a strerr.a substdio_copy.a
+	./load predate datetime.a strerr.a substdio_copy.a -lskarnet
 
 predate.o: \
-compile predate.c datetime.h fork.h wait.h fd.h fmt.h strerr.h \
-substdio.h subfd.h substdio.h readwrite.h sig.h
+compile predate.c datetime.h wait.h fmt.h strerr.h substdio.h
 	./compile predate.c
 
 preline: \
