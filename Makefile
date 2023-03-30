@@ -569,10 +569,8 @@ compile forward.c sig.h qmail.h \
 	./compile forward.c
 
 fs.a: \
-makelib fmt_str.o fmt_strn.o fmt_uint.o fmt_uint0.o fmt_ulong.o \
-scan_ulong.o scan_8long.o
-	./makelib fs.a fmt_str.o fmt_strn.o fmt_uint.o fmt_uint0.o \
-	fmt_ulong.o scan_ulong.o scan_8long.o
+makelib fmt_str.o fmt_strn.o
+	./makelib fs.a fmt_str.o fmt_strn.o
 
 getln.a: \
 makelib getln.o
