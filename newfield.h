@@ -1,7 +1,11 @@
 #ifndef NEWFIELD_H
 #define NEWFIELD_H
 
+/*
 #include "stralloc.h"
+*/
+
+#include <skalibs/stralloc.h>
 
 extern stralloc newfield_date;
 extern int newfield_datemake();

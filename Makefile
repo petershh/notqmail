@@ -894,8 +894,8 @@ compile ndelay_off.c ndelay.h
 	./compile ndelay_off.c
 
 newfield.o: \
-compile newfield.c fmt.h datetime.h stralloc.h gen_alloc.h \
-date822fmt.h newfield.h stralloc.h
+compile newfield.c fmt.h datetime.h \
+date822fmt.h newfield.h
 	./compile newfield.c
 
 oflops.h: \
