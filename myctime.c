@@ -1,7 +1,13 @@
+#include <string.h>
+
+#include <skalibs/types.h>
+
 #include "myctime.h"
 
 #include "datetime.h"
+/*
 #include "fmt.h"
+*/
 
 static char *daytab[7] = {
 "Sun","Mon","Tue","Wed","Thu","Fri","Sat"
@@ -12,26 +18,28 @@ static char *montab[12] = {
 
 static char result[30];
 
-char *myctime(t)
-datetime_sec t;
+char *myctime(datetime_sec *t)
 {
  struct datetime dt;
  unsigned int len;
+ char *nullbyte;
  datetime_tai(&dt,t);
  len = 0;
- len += fmt_str(result + len,daytab[dt.wday]);
+ nullbyte = strcpy(result + len,daytab[dt.wday]);
+ len = nullbyte - result;
  result[len++] = ' ';
- len += fmt_str(result + len,montab[dt.mon]);
+ nullbyte = strcpy(result + len,montab[dt.mon]);
+ len = nullbyte - result;
  result[len++] = ' ';
- len += fmt_uint0(result + len,dt.mday,2);
+ len += uint0_fmt(result + len,dt.mday,2);
  result[len++] = ' ';
- len += fmt_uint0(result + len,dt.hour,2);
+ len += uint0_fmt(result + len,dt.hour,2);
  result[len++] = ':';
- len += fmt_uint0(result + len,dt.min,2);
+ len += uint0_fmt(result + len,dt.min,2);
  result[len++] = ':';
- len += fmt_uint0(result + len,dt.sec,2);
+ len += uint0_fmt(result + len,dt.sec,2);
  result[len++] = ' ';
- len += fmt_uint(result + len,1900 + dt.year);
+ len += uint_fmt(result + len,1900 + dt.year);
  result[len++] = '\n';
  result[len++] = 0;
  return result;
