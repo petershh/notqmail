@@ -575,11 +575,11 @@ scan_ulong.o scan_8long.o
 	fmt_ulong.o scan_ulong.o scan_8long.o
 
 getln.a: \
-makelib getln.a
+makelib getln.o
 	./makelib getln.a getln.o
 
 getln.o: \
-compile getln.c substdio.h byte.h stralloc.h gen_alloc.h getln.h
+compile getln.c getln.h
 	./compile getln.c
 
 getln2.o: \
@@ -798,18 +798,16 @@ maildir.0: \
 maildir.5
 
 maildir.o: \
-compile maildir.c prioq.h datetime.h gen_alloc.h env.h stralloc.h \
-gen_alloc.h direntry.h datetime.h now.h datetime.h str.h maildir.h \
+compile maildir.c prioq.h datetime.h \
+direntry.h datetime.h now.h datetime.h str.h maildir.h \
 strerr.h
 	./compile maildir.c
 
 maildir2mbox: \
-load maildir2mbox.o maildir.o prioq.o myctime.o gfrom.o lock.a \
-getln.a env.a open.a strerr.a stralloc.a substdio.a error.a \
-str.a fs.a datetime.a
+load maildir2mbox.o maildir.o prioq.o myctime.o gfrom.o \
+getln.a strerr.a error.a fs.a datetime.a substdio_copy.a
 	./load maildir2mbox maildir.o prioq.o myctime.o \
-	gfrom.o lock.a getln.a env.a open.a strerr.a stralloc.a \
-	substdio.a error.a str.a fs.a datetime.a
+	gfrom.o getln.a strerr.a error.a fs.a datetime.a substdio_copy.a -lskarnet
 
 maildir2mbox.0: \
 maildir2mbox.1
@@ -822,8 +820,8 @@ strerr.h
 	./compile maildir2mbox.c
 
 maildirmake: \
-load maildirmake.o strerr.a substdio.a error.a str.a
-	./load maildirmake strerr.a substdio.a error.a str.a 
+load maildirmake.o
+	./load maildirmake -lskarnet
 
 maildirmake.0: \
 maildirmake.1
@@ -1775,7 +1773,7 @@ makelib strerr_sys.o strerr_die.o
 	./makelib strerr.a strerr_sys.o strerr_die.o
 
 strerr_die.o: \
-compile strerr_die.c substdio.h subfd.h substdio.h exit.h strerr.h
+compile strerr_die.c strerr.h
 	./compile strerr_die.c
 
 strerr_sys.o: \
@@ -1816,6 +1814,10 @@ subfdouts.o subfdin.o subfdins.o substdio_copy.o
 	./makelib substdio.a substdio.o substdi.o substdo.o \
 	subfderr.o subfdout.o subfdouts.o subfdin.o subfdins.o \
 	substdio_copy.o
+
+substdio_copy.a: \
+makelib substdio_copy.o
+	./makelib substdio_copy.a substdio_copy.o
 
 substdio.o: \
 compile substdio.c substdio.h
