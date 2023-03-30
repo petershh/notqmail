@@ -3,20 +3,27 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "prioq.h"
+
+#include <skalibs/env.h>
+#include <skalibs/stralloc.h>
+
+/*
 #include "env.h"
 #include "stralloc.h"
-#include "direntry.h"
-#include "datetime.h"
-#include "now.h"
 #include "str.h"
+*/
+
+#include "now.h"
+#include "prioq.h"
+#include "datetime.h"
+#include "direntry.h"
 
 struct strerr maildir_chdir_err;
 struct strerr maildir_scan_err;
 
 int maildir_chdir()
 {
- char *maildir;
+ char const *maildir;
  maildir = env_get("MAILDIR");
  if (!maildir)
    STRERR(-1,maildir_chdir_err,"MAILDIR not set")
@@ -25,8 +32,7 @@ int maildir_chdir()
  return 0;
 }
 
-void maildir_clean(tmpname)
-stralloc *tmpname;
+void maildir_clean(stralloc *tmpname)
 {
  DIR *dir;
  direntry *d;
@@ -51,11 +57,7 @@ stralloc *tmpname;
  closedir(dir);
 }
 
-static int append(pq,filenames,subdir,time)
-prioq *pq;
-stralloc *filenames;
-char *subdir;
-datetime_sec time;
+static int append(prioq *pq, stralloc *filenames, char *subdir, datetime_sec time)
 {
  DIR *dir;
  direntry *d;
@@ -89,11 +91,7 @@ datetime_sec time;
  return 0;
 }
 
-int maildir_scan(pq,filenames,flagnew,flagcur)
-prioq *pq;
-stralloc *filenames;
-int flagnew;
-int flagcur;
+int maildir_scan(prioq *pq, stralloc *filenames, int flagnew, int flagcur)
 {
  struct prioq_elt pe;
  datetime_sec time;
