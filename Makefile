@@ -944,17 +944,14 @@ compile predate.c datetime.h wait.h fmt.h strerr.h substdio.h
 	./compile predate.c
 
 preline: \
-load preline.o strerr.a fd.a wait.a sig.a env.a getopt.a substdio.a \
-error.a str.a
-	./load preline strerr.a fd.a wait.a sig.a env.a getopt.a \
-	substdio.a error.a str.a 
+load preline.o wait.a substdio_copy.a
+	./load preline wait.a substdio_copy.a -lskarnet 
 
 preline.0: \
 preline.1
 
 preline.o: \
-compile preline.c fd.h sgetopt.h subgetopt.h readwrite.h strerr.h \
-substdio.h fork.h wait.h env.h sig.h error.h
+compile preline.c substdio.h wait.h
 	./compile preline.c
 
 prioq.o: \

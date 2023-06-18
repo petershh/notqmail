@@ -1,29 +1,39 @@
+/*
 #include "fd.h"
 #include "sgetopt.h"
 #include "readwrite.h"
 #include "strerr.h"
 #include "substdio.h"
 #include "fork.h"
-#include "wait.h"
 #include "env.h"
 #include "sig.h"
 #include "error.h"
+*/
+
+#include <unistd.h>
+#include <errno.h>
+
+#include <skalibs/buffer.h>
+#include <skalibs/strerr.h>
+#include <skalibs/djbunix.h>
+#include <skalibs/sig.h>
+#include <skalibs/sgetopt.h>
+#include <skalibs/error.h>
+#include <skalibs/env.h>
+
+#include "wait.h"
+#include "substdio.h"
 
 #define FATAL "preline: fatal: "
 
 void die_usage()
 {
-  strerr_die1x(100,"preline: usage: preline cmd [ arg ... ]");
+  strerr_dieusage(100, "preline cmd [ arg ... ]");
 }
 
-int flagufline = 1; char *ufline;
-int flagrpline = 1; char *rpline;
-int flagdtline = 1; char *dtline;
-
-char outbuf[SUBSTDIO_OUTSIZE];
-char inbuf[SUBSTDIO_INSIZE];
-substdio ssout = SUBSTDIO_FDBUF(write,1,outbuf,sizeof(outbuf));
-substdio ssin = SUBSTDIO_FDBUF(read,0,inbuf,sizeof(inbuf));
+int flagufline = 1; char const *ufline;
+int flagrpline = 1; char const *rpline;
+int flagdtline = 1; char const *dtline;
 
 int main(int argc, char **argv)
 {
@@ -31,14 +41,16 @@ int main(int argc, char **argv)
   int pi[2];
   int pid;
   int wstat;
+  subgetopt l = SUBGETOPT_ZERO;
  
-  sig_pipeignore();
+  PROG = "preline";
+  sig_ignore(SIGPIPE);
  
   if (!(ufline = env_get("UFLINE"))) die_usage();
   if (!(rpline = env_get("RPLINE"))) die_usage();
   if (!(dtline = env_get("DTLINE"))) die_usage();
  
-  while ((opt = getopt(argc,argv,"frdFRD")) != opteof)
+  while ((opt = subgetopt_r(argc, (char const *const *)argv,"frdFRD", &l)) != -1)
     switch(opt) {
       case 'f': flagufline = 0; break;
       case 'r': flagrpline = 0; break;
@@ -48,40 +60,41 @@ int main(int argc, char **argv)
       case 'D': flagdtline = 1; break;
       default: die_usage();
     }
-  argc -= optind;
-  argv += optind;
+  argc -= l.ind;
+  argv += l.ind;
   if (!*argv) die_usage();
  
   if (pipe(pi) == -1)
-    strerr_die2sys(111,FATAL,"unable to create pipe: ");
+    strerr_diefu1sys(111, "create pipe");
 
   pid = fork();
   if (pid == -1)
-    strerr_die2sys(111,FATAL,"unable to fork: ");
+    strerr_diefu1sys(111, "fork");
 
   if (pid == 0) {
     close(pi[1]);
     if (fd_move(0,pi[0]) == -1)
-      strerr_die2sys(111,FATAL,"unable to set up fds: ");
-    sig_pipedefault();
-    execvp(*argv,argv);
-    strerr_die4sys(error_temp(errno) ? 111 : 100,FATAL,"unable to run ",*argv,": ");
+      strerr_diefu1sys(111, "set up fds");
+    sig_restore(SIGPIPE);
+    execvp(*argv, argv);
+    strerr_diefu2sys(error_temp(errno) ? 111 : 100, "run ", *argv);
   }
   close(pi[0]);
   if (fd_move(1,pi[1]) == -1)
-    strerr_die2sys(111,FATAL,"unable to set up fds: ");
+    strerr_diefu1sys(111, "set up fds");
  
-  if (flagufline) substdio_bputs(&ssout,ufline);
-  if (flagrpline) substdio_bputs(&ssout,rpline);
-  if (flagdtline) substdio_bputs(&ssout,dtline);
-  if (substdio_copy(&ssout,&ssin) != 0)
-    strerr_die2sys(111,FATAL,"unable to copy input: ");
-  substdio_flush(&ssout);
+  
+  if (flagufline) buffer_puts(buffer_1, ufline);
+  if (flagrpline) buffer_puts(buffer_1, rpline);
+  if (flagdtline) buffer_puts(buffer_1, dtline);
+  if (buffer_copy(buffer_1, buffer_0) != 0)
+    strerr_diefu1sys(111, "copy input");
+  buffer_flush(buffer_1);
   close(1);
  
-  if (wait_pid(&wstat,pid) == -1)
-    strerr_die2sys(111,FATAL,"wait failed: ");
+  if (waitpid_nointr(pid, &wstat, 0) == -1)
+    strerr_dief1sys(111, "wait failed");
   if (wait_crashed(wstat))
-    strerr_die2x(111,FATAL,"child crashed");
+    strerr_dief1x(111, "child crashed");
   return wait_exitcode(wstat);
 }
