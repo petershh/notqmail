@@ -1884,7 +1884,7 @@ compile triggerpull.c ndelay.h open.h triggerpull.h
 	./compile triggerpull.c
 
 uid.o: \
-compile uid.c uidgid.h subfd.h substdio.h exit.h
+compile uid.c uidgid.h
 	./compile uid.c
 
 ids.a: \

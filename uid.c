@@ -1,9 +1,15 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <unistd.h>
-#include "uidgid.h"
+
+#include <skalibs/buffer.h>
+
+/*
 #include "subfd.h"
 #include "substdio.h"
+*/
+
+#include "uidgid.h"
 
 uid_t
 inituid(char *user)
@@ -11,10 +17,10 @@ inituid(char *user)
   struct passwd *pw;
   pw = getpwnam(user);
   if (!pw) {
-    substdio_puts(subfderr,"fatal: unable to find user ");
-    substdio_puts(subfderr,user);
-    substdio_puts(subfderr,"\n");
-    substdio_flush(subfderr);
+    buffer_puts(buffer_2,"fatal: unable to find user ");
+    buffer_puts(buffer_2,user);
+    buffer_puts(buffer_2,"\n");
+    buffer_flush(buffer_2);
     _exit(111);
   }
   return pw->pw_uid;
