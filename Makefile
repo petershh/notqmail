@@ -1017,10 +1017,8 @@ qmail-control.9 conf-qmail conf-break conf-spawn
 	> qmail-control.5
 
 qmail-getpw: \
-load qmail-getpw.o case.a substdio.a error.a str.a fs.a auto_break.o \
-ids.a
-	./load qmail-getpw case.a substdio.a error.a str.a fs.a \
-	auto_break.o ids.a
+load qmail-getpw.o auto_break.o ids.a
+	./load qmail-getpw auto_break.o ids.a -lskarnet
 
 qmail-getpw.0: \
 qmail-getpw.8
@@ -1034,9 +1032,7 @@ qmail-getpw.9 conf-qmail conf-break conf-spawn
 	> qmail-getpw.8
 
 qmail-getpw.o: \
-compile qmail-getpw.c readwrite.h substdio.h subfd.h substdio.h \
-error.h exit.h byte.h str.h case.h fmt.h auto_users.h auto_break.h \
-qlx.h
+compile qmail-getpw.c auto_users.h auto_break.h qlx.h
 	./compile qmail-getpw.c
 
 qmail-header.0: \

@@ -1,6 +1,15 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pwd.h>
+#include <errno.h>
+#include <unistd.h>
+
+#include <skalibs/bytestr.h>
+#include <skalibs/error.h>
+#include <skalibs/types.h>
+#include <skalibs/buffer.h>
+
+/*
 #include "readwrite.h"
 #include "substdio.h"
 #include "subfd.h"
@@ -10,6 +19,8 @@
 #include "str.h"
 #include "case.h"
 #include "fmt.h"
+*/
+
 #include "auto_users.h"
 #include "auto_break.h"
 #include "qlx.h"
@@ -35,7 +46,7 @@ int userext()
 	case_lowers(username);
 	errno = 0;
 	pw = getpwnam(username);
-	if (errno == error_txtbsy) _exit(QLX_SYS);
+	if (errno == ETXTBSY) _exit(QLX_SYS);
 	if (pw)
 	  if (pw->pw_uid) {
 	    if (stat(pw->pw_dir,&st) == 0) {
@@ -54,7 +65,7 @@ int userext()
   }
 }
 
-char num[FMT_ULONG];
+char num[ULONG_FMT];
 
 int main(int argc, char **argv)
 {
@@ -69,19 +80,19 @@ int main(int argc, char **argv)
 
   if (!pw) return QLX_NOALIAS;
 
-  substdio_puts(subfdoutsmall,pw->pw_name);
-  substdio_put(subfdoutsmall,"",1);
-  substdio_put(subfdoutsmall,num,fmt_ulong(num,(long) pw->pw_uid));
-  substdio_put(subfdoutsmall,"",1);
-  substdio_put(subfdoutsmall,num,fmt_ulong(num,(long) pw->pw_gid));
-  substdio_put(subfdoutsmall,"",1);
-  substdio_puts(subfdoutsmall,pw->pw_dir);
-  substdio_put(subfdoutsmall,"",1);
-  substdio_puts(subfdoutsmall,dash);
-  substdio_put(subfdoutsmall,"",1);
-  substdio_puts(subfdoutsmall,extension);
-  substdio_put(subfdoutsmall,"",1);
-  substdio_flush(subfdoutsmall);
+  buffer_puts(buffer_1small,pw->pw_name);
+  buffer_put(buffer_1small,"",1);
+  buffer_put(buffer_1small,num,ulong_fmt(num,(long) pw->pw_uid));
+  buffer_put(buffer_1small,"",1);
+  buffer_put(buffer_1small,num,ulong_fmt(num,(long) pw->pw_gid));
+  buffer_put(buffer_1small,"",1);
+  buffer_puts(buffer_1small,pw->pw_dir);
+  buffer_put(buffer_1small,"",1);
+  buffer_puts(buffer_1small,dash);
+  buffer_put(buffer_1small,"",1);
+  buffer_puts(buffer_1small,extension);
+  buffer_put(buffer_1small,"",1);
+  buffer_flush(buffer_1small);
 
   return 0;
 }
