@@ -1,11 +1,20 @@
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
+
+#include <skalibs/stralloc.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/buffer.h>
+#include <skalibs/sig.h>
+#include <skalibs/types.h>
+#include <skalibs/direntry.h>
+
+/*
 #include "readwrite.h"
 #include "sig.h"
-#include "now.h"
 #include "str.h"
 #include "direntry.h"
-#include "getln.h"
 #include "stralloc.h"
 #include "substdio.h"
 #include "subfd.h"
@@ -15,12 +24,17 @@
 #include "fmt.h"
 #include "error.h"
 #include "exit.h"
-#include "fmtqfn.h"
+*/
+
+#include "datetime.h"
+#include "now.h"
+#include "getln.h"
 #include "auto_qmail.h"
+#include "fmtqfn.h"
 
 #define OSSIFIED 129600 /* see qmail-send.c */
 
-stralloc line = {0};
+stralloc line = STRALLOC_ZERO;
 
 void cleanuppid()
 {
@@ -48,7 +62,7 @@ void cleanuppid()
 
 char fnbuf[FMTQFN];
 
-void respond(s) char *s; { if (substdio_putflush(subfdoutsmall,s,1) == -1) _exit(100); }
+void respond(s) char *s; { if (buffer_putflush(buffer_1small,s,1) == -1) _exit(100); }
 
 int main(void)
 {
@@ -60,7 +74,7 @@ int main(void)
  if (chdir(auto_qmail) == -1) return 111;
  if (chdir("queue") == -1) return 111;
 
- sig_pipeignore();
+ sig_ignore(SIGPIPE);
 
  if (!stralloc_ready(&line,200)) return 111;
 
@@ -69,7 +83,7 @@ int main(void)
  for (;;)
   {
    if (cleanuploop) --cleanuploop; else { cleanuppid(); cleanuploop = 30; }
-   if (getln(subfdinsmall,&line,&match,'\0') == -1) break;
+   if (getln(buffer_0small,&line,&match,'\0') == -1) break;
    if (!match) break;
    if (line.len < 7) { respond("x"); continue; }
    if (line.len > 100) { respond("x"); continue; }
@@ -77,11 +91,11 @@ int main(void)
    for (i = 5;i < line.len - 1;++i)
      if ((unsigned char) (line.s[i] - '0') > 9)
       { respond("x"); continue; }
-   if (!scan_ulong(line.s + 5,&id)) { respond("x"); continue; }
+   if (!ulong_scan(line.s + 5,&id)) { respond("x"); continue; }
    if (byte_equal(line.s,5,"foop/"))
     {
 #define U(prefix,flag) fmtqfn(fnbuf,prefix,id,flag); \
-if (unlink(fnbuf) == -1) if (errno != error_noent) { respond("!"); continue; }
+if (unlink(fnbuf) == -1) if (errno != ENOENT) { respond("!"); continue; }
      U("intd/",0)
      U("mess/",1)
      respond("+");

@@ -991,19 +991,15 @@ substdio.h open.h byte.h str.h headerbody.h hfield.h env.h exit.h qtmp.h
 	./compile qbiff.c
 
 qmail-clean: \
-load qmail-clean.o fmtqfn.o getln.a sig.a stralloc.a \
-substdio.a error.a str.a fs.a auto_qmail.o auto_split.o
-	./load qmail-clean fmtqfn.o getln.a sig.a stralloc.a \
-	substdio.a error.a str.a fs.a auto_qmail.o \
-	auto_split.o 
+load qmail-clean.o fmtqfn.o getln.a fs.a auto_qmail.o auto_split.o
+	./load qmail-clean fmtqfn.o getln.a fs.a auto_qmail.o \
+	auto_split.o -lskarnet
 
 qmail-clean.0: \
 qmail-clean.8
 
 qmail-clean.o: \
-compile qmail-clean.c readwrite.h sig.h now.h datetime.h str.h \
-direntry.h getln.h stralloc.h gen_alloc.h substdio.h subfd.h \
-substdio.h byte.h scan.h fmt.h error.h exit.h fmtqfn.h auto_qmail.h
+compile qmail-clean.c now.h datetime.h getln.h fmtqfn.h auto_qmail.h
 	./compile qmail-clean.c
 
 qmail-command.0: \
