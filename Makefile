@@ -955,8 +955,7 @@ compile preline.c substdio.h wait.h
 	./compile preline.c
 
 prioq.o: \
-compile prioq.c alloc.h gen_allocdefs.h prioq.h datetime.h \
-gen_alloc.h oflops.h error.h
+compile prioq.c prioq.h datetime.h
 	./compile prioq.c
 
 proc: \
