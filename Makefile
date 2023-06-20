@@ -1867,8 +1867,7 @@ compile timeoutwrite.c timeoutwrite.h select.h error.h readwrite.h
 	./compile timeoutwrite.c
 
 token822.o: \
-compile token822.c stralloc.h gen_alloc.h alloc.h str.h token822.h \
-gen_alloc.h gen_allocdefs.h oflops.h error.h
+compile token822.c token822.h oflops.h
 	./compile token822.c
 
 trigger.o: \

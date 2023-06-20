@@ -1,34 +1,41 @@
+#include <skalibs/stralloc.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/genalloc.h>
+
 #include "token822.h"
 
+/*
 #include "stralloc.h"
 #include "str.h"
 #include "gen_allocdefs.h"
+*/
 
 static struct token822 comma = { TOKEN822_COMMA };
 
-void token822_reverse(ta)
-token822_alloc *ta;
+void token822_reverse(genalloc *ta)
 {
  int i;
  int n;
  struct token822 temp;
+ struct token822 *ta_t;
 
- n = ta->len - 1;
+ n = genalloc_len(struct token822, ta) - 1;
+ ta_t = genalloc_s(struct token822, ta);
  for (i = 0;i + i < n;++i)
   {
-   temp = ta->t[i];
-   ta->t[i] = ta->t[n - i];
-   ta->t[n - i] = temp;
+   temp = token822_s(ta)[i];
+   token822_s(ta)[i] = token822_s(ta)[n - i];
+   token822_s(ta)[n - i] = temp;
   }
 }
 
+/*
 GEN_ALLOC_readyplus(token822_alloc,struct token822,t,len,a,30,token822_readyplus)
 GEN_ALLOC_ready(token822_alloc,struct token822,t,len,a,30,token822_ready)
 GEN_ALLOC_append(token822_alloc,struct token822,t,len,a,30,token822_readyplus,token822_append)
+*/
 
-static int needspace(t1,t2)
-int t1;
-int t2;
+static int needspace(int t1, int t2)
 {
  if (!t1) return 0;
  if (t1 == TOKEN822_COLON) return 1;
@@ -48,8 +55,7 @@ int t2;
  return 0;
 }
 
-static int atomok(ch)
-char ch;
+static int atomok(char ch)
 {
  switch(ch)
   {
@@ -62,8 +68,7 @@ char ch;
  return 1;
 }
 
-static void atomcheck(t)
-struct token822 *t;
+static void atomcheck(struct token822 *t)
 {
  int i;
  char ch;
@@ -78,10 +83,7 @@ struct token822 *t;
   }
 }
 
-int token822_unparse(sa,ta,linelen)
-stralloc *sa;
-token822_alloc *ta;
-unsigned int linelen;
+int token822_unparse(stralloc *sa, genalloc *ta, unsigned int linelen)
 {
  struct token822 *t;
  int len;
@@ -96,11 +98,11 @@ unsigned int linelen;
 
  len = 0;
  lasttype = 0;
- for (i = 0;i < ta->len;++i)
+ for (i = 0;i < token822_len(ta);++i)
   {
-   t = ta->t + i;
+   t = token822_s(ta) + i;
    newtype = t->type;
-   if (needspace(lasttype,newtype))
+   if (needspace(lasttype, newtype))
      ++len;
    lasttype = newtype;
    switch(newtype)
@@ -132,9 +134,9 @@ unsigned int linelen;
  linee = 0;
 
  lasttype = 0;
- for (i = 0;i < ta->len;++i)
+ for (i = 0;i < token822_len(ta);++i)
   {
-   t = ta->t + i;
+   t = token822_s(ta) + i;
    newtype = t->type;
    if (needspace(lasttype,newtype))
      *s++ = ' ';
@@ -179,9 +181,7 @@ unsigned int linelen;
  return 1;
 }
 
-int token822_unquote(sa,ta)
-stralloc *sa;
-token822_alloc *ta;
+int token822_unquote(stralloc *sa, genalloc *ta)
 {
  struct token822 *t;
  int len;
@@ -190,9 +190,9 @@ token822_alloc *ta;
  char *s;
 
  len = 0;
- for (i = 0;i < ta->len;++i)
+ for (i = 0;i < token822_len(ta);++i)
   {
-   t = ta->t + i;
+   t = token822_s(ta) + i;
    switch(t->type)
     {
      case TOKEN822_COMMA: case TOKEN822_AT: case TOKEN822_DOT: case TOKEN822_LEFT: 
@@ -210,9 +210,9 @@ token822_alloc *ta;
 
  s = sa->s;
 
- for (i = 0;i < ta->len;++i)
+ for (i = 0;i < token822_len(ta);++i)
   {
-   t = ta->t + i;
+   t = genalloc_s(struct token822, ta) + i;
    switch(t->type)
     {
      case TOKEN822_COMMA: *s++ = ','; break;
@@ -235,10 +235,7 @@ token822_alloc *ta;
  return 1;
 }
 
-int token822_parse(ta,sa,buf)
-token822_alloc *ta;
-stralloc *sa;
-stralloc *buf;
+int token822_parse(genalloc *ta,stralloc *sa,stralloc *buf)
 {
  int i;
  int salen;
@@ -321,9 +318,9 @@ stralloc *buf;
  if (!stralloc_ready(buf,numchars))
    return -1;
  cbuf = buf->s;
- ta->len = numtoks;
+ token822_setlen(ta,numtoks);
 
- t = ta->t;
+ t = token822_s(ta);
  for (i = 0;i < salen;++i)
    switch(sa->s[i])
     {
@@ -398,39 +395,37 @@ stralloc *buf;
  return 1;
 }
 
-static int gotaddr(taout,taaddr,callback)
-token822_alloc *taout;
-token822_alloc *taaddr;
-int (*callback)();
+static int gotaddr(genalloc *taout, genalloc *taaddr, int (*callback)())
 {
  int i;
+ struct token822 *taout_arr = genalloc_s(struct token822,taout);
+ struct token822 *taaddr_arr = genalloc_s(struct token822,taaddr);
 
  if (callback(taaddr) != 1)
    return 0;
 
- if (!token822_readyplus(taout,taaddr->len))
+ if (!token822_readyplus(taout,token822_len(taaddr)))
    return 0;
  
- for (i = 0;i < taaddr->len;++i)
-   taout->t[taout->len++] = taaddr->t[i];
+ for (i = 0;i < token822_len(taaddr);++i) {
+   taout_arr[genalloc_len(struct token822,taout)] = taaddr_arr[i];
+   token822_deltalen(taout,1);
+ }
 
- taaddr->len = 0;
+ token822_setlen(taaddr,0);
  return 1;
 }
 
-int token822_addrlist(taout,taaddr,ta,callback)
-token822_alloc *taout;
-token822_alloc *taaddr;
-token822_alloc *ta;
-int (*callback)();
+int token822_addrlist(genalloc *taout,genalloc *taaddr,genalloc *ta,
+        int (*callback)())
 {
  struct token822 *t;
  struct token822 *beginning;
  int ingroup;
  int wordok;
 
- taout->len = 0;
- taaddr->len = 0;
+ token822_setlen(taout, 0);
+ token822_setlen(taaddr, 0);
 
  if (!token822_readyplus(taout,1)) return -1;
  if (!token822_readyplus(taaddr,1)) return -1;
@@ -438,13 +433,14 @@ int (*callback)();
  ingroup = 0;
  wordok = 1;
 
- beginning = ta->t + 2;
- t = ta->t + ta->len - 1;
+ beginning = token822_s(ta) + 2;
+ t = token822_s(ta) + token822_len(ta) - 1;
 
  /* rfc 822 address lists are easy to parse from right to left */
 
-#define FLUSH if (taaddr->len) if (!gotaddr(taout,taaddr,callback)) return -1;
-#define FLUSHCOMMA if (taaddr->len) { \
+#define FLUSH if (token822_len(taaddr)) \
+        if (!gotaddr(taout,taaddr,callback)) return -1;
+#define FLUSHCOMMA if (token822_len(taaddr)) { \
 if (!gotaddr(taout,taaddr,callback)) return -1; \
 if (!token822_append(taout,&comma)) return -1; }
 #define ADDRLEFT if (!token822_append(taaddr,t--)) return -1;
@@ -505,7 +501,7 @@ if (!token822_append(taout,&comma)) return -1; }
   }
  FLUSH
  ++t;
- while (t > ta->t)
+ while (t > token822_s(ta))
    if (!token822_append(taout,--t)) return -1;
 
  token822_reverse(taout);
