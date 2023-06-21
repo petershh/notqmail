@@ -1040,24 +1040,19 @@ qmail-header.5
 
 qmail-inject: \
 load qmail-inject.o headerbody.o hfield.o newfield.o quote.o \
-control.o date822fmt.o constmap.o qmail.o case.a fd.a wait.a open.a \
-getln.a sig.a getopt.a datetime.a token822.o env.a stralloc.a \
-substdio.a error.a str.a fs.a auto_qmail.o
+control.o date822fmt.o constmap.o qmail.o datetime.a token822.o getln.a \
+fs.a auto_qmail.o
 	./load qmail-inject headerbody.o hfield.o newfield.o \
 	quote.o control.o date822fmt.o constmap.o qmail.o \
-	case.a fd.a wait.a open.a getln.a sig.a getopt.a datetime.a \
-	token822.o env.a stralloc.a substdio.a error.a \
-	str.a fs.a auto_qmail.o 
+	getln.a datetime.a token822.o fs.a auto_qmail.o -lskarnet
 
 qmail-inject.0: \
 qmail-inject.8
 
 qmail-inject.o: \
-compile qmail-inject.c sig.h substdio.h stralloc.h gen_alloc.h \
-subfd.h substdio.h sgetopt.h subgetopt.h getln.h alloc.h str.h fmt.h \
-hfield.h token822.h gen_alloc.h control.h env.h gen_alloc.h \
-gen_allocdefs.h error.h qmail.h substdio.h now.h datetime.h error.h exit.h \
-quote.h headerbody.h auto_qmail.h newfield.h stralloc.h constmap.h oflops.h
+compile qmail-inject.c getln.h fmt.h hfield.h token822.h control.h \
+qmail.h now.h datetime.h quote.h headerbody.h auto_qmail.h newfield.h \
+constmap.h oflops.h
 	./compile qmail-inject.c
 
 qmail-limits.0: \

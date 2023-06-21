@@ -1,81 +1,97 @@
+#include <errno.h>
+#include <unistd.h>
+
+#include <skalibs/env.h>
+#include <skalibs/sig.h>
+#include <skalibs/buffer.h>
+#include <skalibs/stralloc.h>
+#include <skalibs/genalloc.h>
+#include <skalibs/sgetopt.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/types.h>
+
+/*
 #include "sig.h"
 #include "substdio.h"
 #include "stralloc.h"
 #include "subfd.h"
 #include "sgetopt.h"
-#include "getln.h"
 #include "str.h"
 #include "fmt.h"
-#include "hfield.h"
-#include "token822.h"
-#include "control.h"
-#include "datetime.h"
 #include "env.h"
 #include "gen_alloc.h"
 #include "gen_allocdefs.h"
 #include "error.h"
-#include "qmail.h"
-#include "now.h"
 #include "exit.h"
-#include "noreturn.h"
+*/
+
+#include "now.h"
+#include "getln.h"
+#include "hfield.h"
+#include "token822.h"
+#include "control.h"
+#include "datetime.h"
+#include "qmail.h"
 #include "quote.h"
 #include "headerbody.h"
 #include "auto_qmail.h"
 #include "newfield.h"
 #include "constmap.h"
+#include "noreturn.h"
+
 
 #define LINELEN 80
 
 datetime_sec starttime;
 
-char *qmopts;
+char const *qmopts;
 int flagdeletesender = 0;
 int flagdeletefrom = 0;
 int flagdeletemessid = 0;
 int flagnamecomment = 0;
 int flaghackmess = 0;
 int flaghackrecip = 0;
-char *mailhost;
-char *mailuser;
+char const *mailhost;
+char const *mailuser;
 int mailusertokentype;
-char *mailrhost;
-char *mailruser;
+char const *mailrhost;
+char const *mailruser;
 
-stralloc control_idhost = {0};
-stralloc control_defaultdomain = {0};
-stralloc control_defaulthost = {0};
-stralloc control_plusdomain = {0};
+stralloc control_idhost = STRALLOC_ZERO;
+stralloc control_defaultdomain = STRALLOC_ZERO;
+stralloc control_defaulthost = STRALLOC_ZERO;
+stralloc control_plusdomain = STRALLOC_ZERO;
 
-stralloc sender = {0};
-stralloc envsbuf = {0};
-token822_alloc envs = {0};
+stralloc sender = STRALLOC_ZERO;
+stralloc envsbuf = STRALLOC_ZERO;
+genalloc envs = GENALLOC_ZERO;
 int flagrh;
 
 int flagqueue;
 struct qmail qqt;
 
-void put(s,len) char *s; int len;
-{ if (flagqueue) qmail_put(&qqt,s,len); else substdio_put(subfdout,s,len); }
+void put(char *s,int len)
+{ if (flagqueue) qmail_put(&qqt,s,len); else buffer_put(buffer_1,s,len); }
 void puts(s) char *s; { put(s,str_len(s)); }
 
 void _noreturn_ perm() { _exit(100); }
 void _noreturn_ temp() { _exit(111); }
 void _noreturn_ die_nomem() {
- substdio_putsflush(subfderr,"qmail-inject: fatal: out of memory\n"); temp(); }
+ buffer_putsflush(buffer_2,"qmail-inject: fatal: out of memory\n"); temp(); }
 void _noreturn_ die_invalid(sa) stralloc *sa; {
- substdio_putsflush(subfderr,"qmail-inject: fatal: invalid header field: ");
- substdio_putflush(subfderr,sa->s,sa->len); perm(); }
+ buffer_putsflush(buffer_2,"qmail-inject: fatal: invalid header field: ");
+ buffer_putflush(buffer_2,sa->s,sa->len); perm(); }
 void _noreturn_ die_qqt() {
- substdio_putsflush(subfderr,"qmail-inject: fatal: unable to run qmail-queue\n"); temp(); }
+ buffer_putsflush(buffer_2,"qmail-inject: fatal: unable to run qmail-queue\n"); temp(); }
 void _noreturn_ die_chdir() {
- substdio_putsflush(subfderr,"qmail-inject: fatal: internal bug\n"); temp(); }
+ buffer_putsflush(buffer_2,"qmail-inject: fatal: internal bug\n"); temp(); }
 void _noreturn_ die_read() {
- if (errno == error_nomem) die_nomem();
- substdio_putsflush(subfderr,"qmail-inject: fatal: read error\n"); temp(); }
-void doordie(sa,r) stralloc *sa; int r; {
+ if (errno == ENOMEM) die_nomem();
+ buffer_putsflush(buffer_2,"qmail-inject: fatal: read error\n"); temp(); }
+void doordie(stralloc *sa, int r) {
  if (r == 1) return; if (r == -1) die_nomem();
- substdio_putsflush(subfderr,"qmail-inject: fatal: unable to parse this line:\n");
- substdio_putflush(subfderr,sa->s,sa->len); perm(); }
+ buffer_putsflush(buffer_2,"qmail-inject: fatal: unable to parse this line:\n");
+ buffer_putflush(buffer_2,sa->s,sa->len); perm(); }
 /* call doordie, but if q is set ignore parse errors (i.e. r == 0) */
 static int doordie_rh(stralloc *sa, int r, int q)
 {
@@ -85,23 +101,25 @@ static int doordie_rh(stralloc *sa, int r, int q)
   return 1;
 }
 
+/*
 GEN_ALLOC_typedef(saa,stralloc,sa,len,a)
 GEN_ALLOC_readyplus(saa,stralloc,sa,len,a,10,saa_readyplus)
+*/
 
-static stralloc sauninit = {0};
+static stralloc sauninit = STRALLOC_ZERO;
 
-saa savedh = {0};
-saa hrlist = {0};
-saa tocclist = {0};
-saa hrrlist = {0};
-saa reciplist = {0};
+genalloc savedh = GENALLOC_ZERO;
+genalloc hrlist = GENALLOC_ZERO;
+genalloc tocclist = GENALLOC_ZERO;
+genalloc hrrlist = GENALLOC_ZERO;
+genalloc reciplist = GENALLOC_ZERO;
 int flagresent;
 
 void _noreturn_ exitnicely()
 {
  char *qqx;
 
- if (!flagqueue) substdio_flush(subfdout);
+ if (!flagqueue) buffer_flush(buffer_1);
 
  if (flagqueue)
   {
@@ -112,38 +130,38 @@ void _noreturn_ exitnicely()
 
    for (i = 0;i < reciplist.len;++i)
     {
-     if (!stralloc_0(&reciplist.sa[i])) die_nomem();
-     qmail_to(&qqt,reciplist.sa[i].s);
+     if (!stralloc_0(&genalloc_s(stralloc,&reciplist)[i])) die_nomem();
+     qmail_to(&qqt,genalloc_s(stralloc,&reciplist)[i].s);
     }
    if (flagrh) {
      if (flagresent)
-       for (i = 0;i < hrrlist.len;++i)
+       for (i = 0;i < genalloc_len(stralloc,&hrrlist);++i)
 	{
-         if (!stralloc_0(&hrrlist.sa[i])) die_nomem();
-	 qmail_to(&qqt,hrrlist.sa[i].s);
+         if (!stralloc_0(&genalloc_s(stralloc,&hrrlist)[i])) die_nomem();
+	 qmail_to(&qqt,genalloc_s(stralloc,&hrrlist)[i].s);
 	}
      else
-       for (i = 0;i < hrlist.len;++i)
+       for (i = 0;i < genalloc_len(stralloc,&hrlist);++i)
 	{
-         if (!stralloc_0(&hrlist.sa[i])) die_nomem();
-	 qmail_to(&qqt,hrlist.sa[i].s);
+         if (!stralloc_0(&genalloc_s(stralloc,&hrrlist)[i])) die_nomem();
+	 qmail_to(&qqt,genalloc_s(stralloc,&hrlist)[i].s);
 	}
    }
 
    qqx = qmail_close(&qqt);
    if (*qqx) {
      if (*qqx == 'D') {
-       substdio_puts(subfderr,"qmail-inject: fatal: ");
-       substdio_puts(subfderr,qqx + 1);
-       substdio_puts(subfderr,"\n");
-       substdio_flush(subfderr);
+       buffer_puts(buffer_2,"qmail-inject: fatal: ");
+       buffer_puts(buffer_2,qqx + 1);
+       buffer_puts(buffer_2,"\n");
+       buffer_flush(buffer_2);
        perm();
      }
      else {
-       substdio_puts(subfderr,"qmail-inject: fatal: ");
-       substdio_puts(subfderr,qqx + 1);
-       substdio_puts(subfderr,"\n");
-       substdio_flush(subfderr);
+       buffer_puts(buffer_2,"qmail-inject: fatal: ");
+       buffer_puts(buffer_2,qqx + 1);
+       buffer_puts(buffer_2,"\n");
+       buffer_flush(buffer_2);
        temp();
      }
    }
@@ -152,12 +170,12 @@ void _noreturn_ exitnicely()
  _exit(0);
 }
 
-void savedh_append(h)
-stralloc *h;
+void savedh_append(stralloc *h)
 {
- if (!saa_readyplus(&savedh,1)) die_nomem();
- savedh.sa[savedh.len] = sauninit;
- if (!stralloc_copy(savedh.sa + savedh.len,h)) die_nomem();
+ if (!genalloc_readyplus(stralloc,&savedh,1)) die_nomem();
+ genalloc_s(stralloc,&savedh)[genalloc_len(stralloc,&savedh)] = sauninit;
+ if (!stralloc_copy(genalloc_s(stralloc,&savedh)
+             + genalloc_len(stralloc,&savedh),h)) die_nomem();
  ++savedh.len;
 }
 
@@ -165,139 +183,152 @@ void savedh_print()
 {
  int i;
 
- for (i = 0;i < savedh.len;++i)
-   put(savedh.sa[i].s,savedh.sa[i].len);
+ for (i = 0;i < genalloc_len(stralloc,&savedh);++i)
+   put(genalloc_s(stralloc,&savedh)[i].s,genalloc_s(stralloc,&savedh)[i].len);
 }
 
-stralloc defaultdomainbuf = {0};
-token822_alloc defaultdomain = {0};
-stralloc defaulthostbuf = {0};
-token822_alloc defaulthost = {0};
-stralloc plusdomainbuf = {0};
-token822_alloc plusdomain = {0};
+stralloc defaultdomainbuf = STRALLOC_ZERO;
+genalloc defaultdomain = GENALLOC_ZERO;
+stralloc defaulthostbuf = STRALLOC_ZERO;
+genalloc defaulthost = GENALLOC_ZERO;
+stralloc plusdomainbuf = STRALLOC_ZERO;
+genalloc plusdomain = GENALLOC_ZERO;
 
-void rwroute(addr)
-token822_alloc *addr;
+void rwroute(genalloc *addr)
 {
- if (addr->t[addr->len - 1].type == TOKEN822_AT)
-   while (addr->len)
-     if (addr->t[--addr->len].type == TOKEN822_COLON)
+ struct token822 *addr_arr = token822_s(addr);
+ size_t addr_len = token822_len(addr);
+ if (addr_arr[addr_len - 1].type == TOKEN822_AT)
+   while (addr_len)
+     addr_len--;
+     token822_setlen(addr, addr_len);
+     if (addr_arr[addr_len].type == TOKEN822_COLON)
        return;
 }
 
-void rwextraat(addr)
-token822_alloc *addr;
+void rwextraat(genalloc *addr)
 {
  int i;
- if (addr->t[0].type == TOKEN822_AT)
+ struct token822 *addr_arr = token822_s(addr);
+ size_t addr_len = token822_len(addr);
+ if (addr_arr[0].type == TOKEN822_AT)
   {
-   --addr->len;
-   for (i = 0;i < addr->len;++i)
-     addr->t[i] = addr->t[i + 1];
+   addr_len--;
+   token822_setlen(addr, addr_len);
+   for (i = 0;i < addr_len;++i)
+     addr_arr[i] = addr_arr[i + 1];
   }
 }
 
-void rwextradot(addr)
-token822_alloc *addr;
+void rwextradot(genalloc *addr)
 {
  int i;
- if (addr->t[0].type == TOKEN822_DOT)
+ struct token822 *addr_arr = token822_s(addr);
+ size_t addr_len = token822_len(addr);
+ if (addr_arr[0].type == TOKEN822_DOT)
   {
-   --addr->len;
+   addr_len--;
+   token822_setlen(addr, addr_len);
    for (i = 0;i < addr->len;++i)
-     addr->t[i] = addr->t[i + 1];
+     addr_arr[i] = addr_arr[i + 1];
   }
 }
 
-void rwnoat(addr)
-token822_alloc *addr;
+void rwnoat(genalloc *addr)
 {
  int i;
  int shift;
+ struct token822 *addr_arr = token822_s(addr);
+ size_t addr_len = token822_len(addr);
 
- for (i = 0;i < addr->len;++i)
-   if (addr->t[i].type == TOKEN822_AT)
+ for (i = 0;i < addr_len;++i)
+   if (addr_arr[i].type == TOKEN822_AT)
      return;
- shift = defaulthost.len;
+ shift = token822_len(&defaulthost);
  if (!token822_readyplus(addr,shift)) die_nomem();
- for (i = addr->len - 1;i >= 0;--i)
-   addr->t[i + shift] = addr->t[i];
- addr->len += shift;
+ for (i = addr_len - 1;i >= 0;--i)
+   addr_arr[i + shift] = addr_arr[i];
+ addr_len += shift;
+ token822_setlen(addr, addr_len);
  for (i = 0;i < shift;++i)
-   addr->t[i] = defaulthost.t[shift - 1 - i];
+   addr_arr[i] = token822_s(&defaulthost)[shift - 1 - i];
 }
 
-void rwnodot(addr)
-token822_alloc *addr;
+void rwnodot(genalloc *addr)
 {
  int i;
  int shift;
- for (i = 0;i < addr->len;++i)
+ struct token822 *addr_arr = token822_s(addr);
+ size_t addr_len = token822_len(addr);
+ for (i = 0;i < addr_len;++i)
   {
-   if (addr->t[i].type == TOKEN822_DOT)
+   if (addr_arr[i].type == TOKEN822_DOT)
      return;
-   if (addr->t[i].type == TOKEN822_AT)
+   if (addr_arr[i].type == TOKEN822_AT)
      break;
   }
- for (i = 0;i < addr->len;++i)
+ for (i = 0;i < addr_len;++i)
   {
-   if (addr->t[i].type == TOKEN822_LITERAL)
+   if (addr_arr[i].type == TOKEN822_LITERAL)
      return;
-   if (addr->t[i].type == TOKEN822_AT)
+   if (addr_arr[i].type == TOKEN822_AT)
      break;
   }
- shift = defaultdomain.len;
+ shift = token822_len(&defaultdomain);
  if (!token822_readyplus(addr,shift)) die_nomem();
- for (i = addr->len - 1;i >= 0;--i)
-   addr->t[i + shift] = addr->t[i];
- addr->len += shift;
+ for (i = addr_len - 1;i >= 0;--i)
+   addr_arr[i + shift] = addr_arr[i];
+ addr_len += shift;
+ token822_setlen(addr, addr_len);
  for (i = 0;i < shift;++i)
-   addr->t[i] = defaultdomain.t[shift - 1 - i];
+   addr_arr[i] = token822_s(&defaultdomain)[shift - 1 - i];
 }
 
-void rwplus(addr)
-token822_alloc *addr;
+void rwplus(genalloc *addr)
 {
  int i;
  int shift;
+ size_t addr_len = token822_len(addr);
+ struct token822 *addr_arr = token822_s(addr);
 
- if (addr->t[0].type != TOKEN822_ATOM) return;
- if (!addr->t[0].slen) return;
- if (addr->t[0].s[addr->t[0].slen - 1] != '+') return;
+ if (addr_arr[0].type != TOKEN822_ATOM) return;
+ if (!addr_arr[0].slen) return;
+ if (addr_arr[0].s[addr_arr[0].slen - 1] != '+') return;
 
- --addr->t[0].slen; /* remove + */
+ --addr_arr[0].slen; /* remove + */
 
- shift = plusdomain.len;
+ shift = token822_len(&plusdomain);
  if (!token822_readyplus(addr,shift)) die_nomem();
- for (i = addr->len - 1;i >= 0;--i)
-   addr->t[i + shift] = addr->t[i];
- addr->len += shift;
+ for (i = addr_len - 1;i >= 0;--i)
+   addr_arr[i + shift] = addr_arr[i];
+ addr_len += shift;
+ token822_setlen(addr, addr_len);
  for (i = 0;i < shift;++i)
-   addr->t[i] = plusdomain.t[shift - 1 - i];
+   addr_arr[i] = token822_s(&plusdomain)[shift - 1 - i];
 }
 
-void rwgeneric(addr)
-token822_alloc *addr;
+void rwgeneric(genalloc *addr)
 {
- if (!addr->len) return; /* don't rewrite <> */
- if (addr->len >= 2)
-   if (addr->t[1].type == TOKEN822_AT)
-     if (addr->t[0].type == TOKEN822_LITERAL)
-       if (!addr->t[0].slen) /* don't rewrite <foo@[]> */
+ size_t addr_len = token822_len(addr);
+ struct token822 *addr_arr = token822_s(addr);
+ if (!addr_len) return; /* don't rewrite <> */
+ if (addr_len >= 2)
+   if (addr_arr[1].type == TOKEN822_AT)
+     if (addr_arr[0].type == TOKEN822_LITERAL)
+       if (!addr_arr[0].slen) /* don't rewrite <foo@[]> */
 	 return;
  rwroute(addr);
- if (!addr->len) return; /* <@foo:> -> <> */
+ if (!token822_len(addr)) return; /* <@foo:> -> <> */
  rwextradot(addr);
- if (!addr->len) return; /* <.> -> <> */
+ if (!token822_len(addr)) return; /* <.> -> <> */
  rwextraat(addr);
- if (!addr->len) return; /* <@> -> <> */
+ if (!token822_len(addr)) return; /* <@> -> <> */
  rwnoat(addr);
  rwplus(addr);
  rwnodot(addr);
 }
 
-int setreturn(addr)
-token822_alloc *addr;
+int setreturn(genalloc *addr)
 {
  if (!sender.s)
   {
@@ -310,48 +341,44 @@ token822_alloc *addr;
  return 1;
 }
 
-int rwreturn(addr)
-token822_alloc *addr;
+int rwreturn(genalloc *addr)
 {
  rwgeneric(addr);
  setreturn(addr);
  return 1;
 }
 
-int rwsender(addr)
-token822_alloc *addr;
+int rwsender(genalloc *addr)
 {
  rwgeneric(addr);
  return 1;
 }
 
-void rwappend(addr,xl)
-token822_alloc *addr;
-saa *xl;
+void rwappend(genalloc *addr, genalloc *xl)
 {
  token822_reverse(addr);
- if (!saa_readyplus(xl,1)) die_nomem();
- xl->sa[xl->len] = sauninit;
- if (token822_unquote(&xl->sa[xl->len],addr) != 1) die_nomem();
+ if (!genalloc_readyplus(stralloc,xl,1)) die_nomem();
+ genalloc_s(stralloc,xl)[genalloc_len(stralloc,xl)] = sauninit;
+ if (token822_unquote(genalloc_s(stralloc,xl) + genalloc_len(stralloc,xl),
+             addr) != 1) die_nomem();
  ++xl->len;
  token822_reverse(addr);
 }
 
-int rwhrr(addr) token822_alloc *addr;
+int rwhrr(genalloc *addr)
 { rwgeneric(addr); rwappend(addr,&hrrlist); return 1; }
-int rwhr(addr) token822_alloc *addr;
+int rwhr(genalloc *addr)
 { rwgeneric(addr); rwappend(addr,&hrlist); return 1; }
-int rwtocc(addr) token822_alloc *addr;
+int rwtocc(genalloc *addr)
 { rwgeneric(addr); rwappend(addr,&hrlist); rwappend(addr,&tocclist); return 1; }
 
 int htypeseen[H_NUM];
-stralloc hfbuf = {0};
-token822_alloc hfin = {0};
-token822_alloc hfrewrite = {0};
-token822_alloc hfaddr = {0};
+stralloc hfbuf = STRALLOC_ZERO;
+genalloc hfin = GENALLOC_ZERO;
+genalloc hfrewrite = GENALLOC_ZERO;
+genalloc hfaddr = GENALLOC_ZERO;
 
-void doheaderfield(h)
-stralloc *h;
+void doheaderfield(stralloc *h)
 {
   int htype;
   int (*rw)() = 0;
@@ -404,26 +431,24 @@ stralloc *h;
   savedh_append(h);
 }
 
-void dobody(h)
-stralloc *h;
+void dobody(stralloc *h)
 {
  put(h->s,h->len);
 }
 
-stralloc torecip = {0};
-token822_alloc tr = {0};
+stralloc torecip = STRALLOC_ZERO;
+genalloc tr = GENALLOC_ZERO;
 
-void dorecip(s)
-char *s;
+void dorecip(char *s)
 {
  if (!quote2(&torecip,s)) die_nomem();
  switch(token822_parse(&tr,&torecip,&hfbuf))
   {
    case -1: die_nomem();
    case 0:
-     substdio_puts(subfderr,"qmail-inject: fatal: unable to parse address: ");
-     substdio_puts(subfderr,s);
-     substdio_putsflush(subfderr,"\n");
+     buffer_puts(buffer_2,"qmail-inject: fatal: unable to parse address: ");
+     buffer_puts(buffer_2,s);
+     buffer_putsflush(buffer_2,"\n");
      perm();
   }
  token822_reverse(&tr);
@@ -431,56 +456,58 @@ char *s;
  rwappend(&tr,&reciplist);
 }
 
-stralloc defaultfrom = {0};
-token822_alloc df = {0};
+stralloc defaultfrom = STRALLOC_ZERO;
+genalloc df = GENALLOC_ZERO;
 
-void defaultfrommake()
+void defaultfrommake(void)
 {
- char *fullname;
+ char const *fullname;
+ struct token822 *df_arr;
  fullname = env_get("QMAILNAME");
+ df_arr = token822_s(&df);
  if (!fullname) fullname = env_get("MAILNAME");
  if (!fullname) fullname = env_get("NAME");
  if (!token822_ready(&df,20)) die_nomem();
- df.len = 0;
- df.t[df.len].type = TOKEN822_ATOM;
- df.t[df.len].s = "From";
- df.t[df.len].slen = 4;
- ++df.len;
- df.t[df.len].type = TOKEN822_COLON;
- ++df.len;
+ token822_setlen(&df,0);
+ df_arr[0].type = TOKEN822_ATOM;
+ df_arr[0].s = "From";
+ df_arr[0].slen = 4;
+ token822_setlen(&df, 1);
+ df_arr[1].type = TOKEN822_COLON;
+ token822_setlen(&df, 2);
  if (fullname && !flagnamecomment)
   {
-   df.t[df.len].type = TOKEN822_QUOTE;
-   df.t[df.len].s = fullname;
-   df.t[df.len].slen = str_len(fullname);
-   ++df.len;
-   df.t[df.len].type = TOKEN822_LEFT;
-   ++df.len;
+   df_arr[2].type = TOKEN822_QUOTE;
+   df_arr[2].s = fullname;
+   df_arr[2].slen = str_len(fullname);
+   token822_setlen(&df, 3);
+   df_arr[3].type = TOKEN822_LEFT;
+   token822_setlen(&df, 4);
   }
- df.t[df.len].type = mailusertokentype;
- df.t[df.len].s = mailuser;
- df.t[df.len].slen = str_len(mailuser);
- ++df.len;
+ df_arr[token822_len(&df)].type = mailusertokentype;
+ df_arr[token822_len(&df)].s = mailuser;
+ df_arr[token822_len(&df)].slen = str_len(mailuser);
+ token822_deltalen(&df, 1);
  if (mailhost)
   {
-   df.t[df.len].type = TOKEN822_AT;
-   ++df.len;
-   df.t[df.len].type = TOKEN822_ATOM;
-   df.t[df.len].s = mailhost;
-   df.t[df.len].slen = str_len(mailhost);
-   ++df.len;
+   df_arr[token822_len(&df)].type = TOKEN822_AT;
+   token822_deltalen(&df, 1);
+   df_arr[token822_len(&df)].type = TOKEN822_ATOM;
+   df_arr[token822_len(&df)].s = mailhost;
+   df_arr[token822_len(&df)].slen = str_len(mailhost);
+   token822_deltalen(&df, 1);
   }
  if (fullname && !flagnamecomment)
   {
-   df.t[df.len].type = TOKEN822_RIGHT;
-   ++df.len;
+   df_arr[token822_len(&df)].type = TOKEN822_RIGHT;
+   token822_deltalen(&df, 1);
   }
  if (fullname && flagnamecomment)
   {
-   df.t[df.len].type = TOKEN822_COMMENT;
-   df.t[df.len].s = fullname;
-   df.t[df.len].slen = str_len(fullname);
-   ++df.len;
+   df_arr[token822_len(&df)].type = TOKEN822_COMMENT;
+   df_arr[token822_len(&df)].s = fullname;
+   df_arr[token822_len(&df)].slen = str_len(fullname);
+   token822_deltalen(&df, 1);
   }
  if (token822_unparse(&defaultfrom,&df,LINELEN) != 1) die_nomem();
  doordie(&defaultfrom,token822_parse(&df,&defaultfrom,&hfbuf));
@@ -488,43 +515,44 @@ void defaultfrommake()
  if (token822_unparse(&defaultfrom,&hfrewrite,LINELEN) != 1) die_nomem();
 }
 
-stralloc defaultreturnpath = {0};
-token822_alloc drp = {0};
-stralloc hackedruser = {0};
-char strnum[FMT_ULONG];
+stralloc defaultreturnpath = STRALLOC_ZERO;
+genalloc drp = GENALLOC_ZERO;
+stralloc hackedruser = STRALLOC_ZERO;
+char strnum[ULONG_FMT];
 
-void dodefaultreturnpath()
+void dodefaultreturnpath(void)
 {
+ struct token822 *drp_arr = token822_s(&drp);
  if (!stralloc_copys(&hackedruser,mailruser)) die_nomem();
  if (flaghackmess)
   {
    if (!stralloc_cats(&hackedruser,"-")) die_nomem();
-   if (!stralloc_catb(&hackedruser,strnum,fmt_ulong(strnum,(unsigned long) starttime))) die_nomem();
+   if (!stralloc_catb(&hackedruser,strnum,ulong_fmt(strnum,(unsigned long) starttime))) die_nomem();
    if (!stralloc_cats(&hackedruser,".")) die_nomem();
-   if (!stralloc_catb(&hackedruser,strnum,fmt_ulong(strnum,(unsigned long) getpid()))) die_nomem();
+   if (!stralloc_catb(&hackedruser,strnum,ulong_fmt(strnum,(unsigned long) getpid()))) die_nomem();
   }
  if (flaghackrecip)
    if (!stralloc_cats(&hackedruser,"-")) die_nomem();
  if (!token822_ready(&drp,10)) die_nomem();
- drp.len = 0;
- drp.t[drp.len].type = TOKEN822_ATOM;
- drp.t[drp.len].s = "Return-Path";
- drp.t[drp.len].slen = 11;
- ++drp.len;
- drp.t[drp.len].type = TOKEN822_COLON;
- ++drp.len;
- drp.t[drp.len].type = TOKEN822_QUOTE;
- drp.t[drp.len].s = hackedruser.s;
- drp.t[drp.len].slen = hackedruser.len;
- ++drp.len;
+ token822_setlen(&drp, 0);
+ drp_arr[token822_len(&drp)].type = TOKEN822_ATOM;
+ drp_arr[token822_len(&drp)].s = "Return-Path";
+ drp_arr[token822_len(&drp)].slen = 11;
+ token822_deltalen(&drp, 1);
+ drp_arr[token822_len(&drp)].type = TOKEN822_COLON;
+ token822_deltalen(&drp, 1);
+ drp_arr[token822_len(&drp)].type = TOKEN822_QUOTE;
+ drp_arr[token822_len(&drp)].s = hackedruser.s;
+ drp_arr[token822_len(&drp)].slen = hackedruser.len;
+ token822_deltalen(&drp, 1);
  if (mailrhost)
   {
-   drp.t[drp.len].type = TOKEN822_AT;
-   ++drp.len;
-   drp.t[drp.len].type = TOKEN822_ATOM;
-   drp.t[drp.len].s = mailrhost;
-   drp.t[drp.len].slen = str_len(mailrhost);
-   ++drp.len;
+   drp_arr[token822_len(&drp)].type = TOKEN822_AT;
+   token822_deltalen(&drp, 1);
+   drp_arr[token822_len(&drp)].type = TOKEN822_ATOM;
+   drp_arr[token822_len(&drp)].s = mailrhost;
+   drp_arr[token822_len(&drp)].slen = str_len(mailrhost);
+   token822_deltalen(&drp, 1);
   }
  if (token822_unparse(&defaultreturnpath,&drp,LINELEN) != 1) die_nomem();
  doordie(&defaultreturnpath,token822_parse(&drp,&defaultreturnpath,&hfbuf));
@@ -534,12 +562,12 @@ void dodefaultreturnpath()
 }
 
 int flagmft = 0;
-stralloc mft = {0};
+stralloc mft = STRALLOC_ZERO;
 struct constmap mapmft;
 
-void mft_init()
+void mft_init(void)
 {
-  char *x;
+  char const *x;
   int r;
 
   x = env_get("QMAILMFTFILE");
@@ -553,25 +581,26 @@ void mft_init()
   flagmft = 1;
 }
 
-void finishmft()
+void finishmft(void)
 {
   int i;
-  static stralloc sa = {0};
-  static stralloc sa2 = {0};
+  static stralloc sa = STRALLOC_ZERO;
+  static stralloc sa2 = STRALLOC_ZERO;
 
   if (!flagmft) return;
   if (htypeseen[H_MAILFOLLOWUPTO]) return;
 
-  for (i = 0;i < tocclist.len;++i)
-    if (constmap(&mapmft,tocclist.sa[i].s,tocclist.sa[i].len))
+  for (i = 0;i < genalloc_len(stralloc,&tocclist);++i)
+    if (constmap(&mapmft,genalloc_s(stralloc, &tocclist)[i].s,
+                genalloc_s(stralloc, &tocclist)[i].len))
       break;
 
-  if (i == tocclist.len) return;
+  if (i == genalloc_len(stralloc, &tocclist)) return;
 
   puts("Mail-Followup-To: ");
-  i = tocclist.len;
+  i = genalloc_len(stralloc, &tocclist);
   while (i--) {
-    if (!stralloc_copy(&sa,&tocclist.sa[i])) die_nomem();
+    if (!stralloc_copy(&sa,genalloc_s(stralloc, &tocclist) + i)) die_nomem();
     if (!stralloc_0(&sa)) die_nomem();
     if (!quote2(&sa2,sa.s)) die_nomem();
     put(sa2.s,sa2.len);
@@ -580,7 +609,7 @@ void finishmft()
   puts("\n");
 }
 
-void finishheader()
+void finishheader(void)
 {
  flagresent =
    htypeseen[H_R_SENDER] || htypeseen[H_R_FROM] || htypeseen[H_R_REPLYTO]
@@ -656,10 +685,10 @@ void finishheader()
  savedh_print();
 }
 
-void getcontrols()
+void getcontrols(void)
 {
- static stralloc sa = {0};
- char *x;
+ static stralloc sa = STRALLOC_ZERO;
+ char const *x;
 
  mft_init();
 
@@ -706,8 +735,9 @@ int main(int argc, char **argv)
  int i;
  int opt;
  int recipstrategy;
+ subgetopt l = SUBGETOPT_ZERO;
 
- sig_pipeignore();
+ sig_ignore(SIGPIPE);
 
  starttime = now();
 
@@ -746,12 +776,12 @@ int main(int argc, char **argv)
 
  getcontrols();
 
- if (!saa_readyplus(&hrlist,1)) die_nomem();
- if (!saa_readyplus(&tocclist,1)) die_nomem();
- if (!saa_readyplus(&hrrlist,1)) die_nomem();
- if (!saa_readyplus(&reciplist,1)) die_nomem();
+ if (!genalloc_readyplus(stralloc,&hrlist,1)) die_nomem();
+ if (!genalloc_readyplus(stralloc,&tocclist,1)) die_nomem();
+ if (!genalloc_readyplus(stralloc,&hrrlist,1)) die_nomem();
+ if (!genalloc_readyplus(stralloc,&reciplist,1)) die_nomem();
 
- while ((opt = getopt(argc,argv,"aAhHnNf:")) != opteof)
+ while ((opt = subgetopt_r(argc,(char const *const *)argv,"aAhHnNf:",&l)) != -1)
    switch(opt)
     {
      case 'a': recipstrategy = RECIP_ARGS; break;
@@ -761,7 +791,7 @@ int main(int argc, char **argv)
      case 'n': flagqueue = 0; break;
      case 'N': flagqueue = 1; break;
      case 'f':
-       if (!quote2(&sender,optarg)) die_nomem();
+       if (!quote2(&sender,l.arg)) die_nomem();
        doordie(&sender,token822_parse(&envs,&sender,&envsbuf));
        token822_reverse(&envs);
        rwgeneric(&envs);
@@ -772,8 +802,8 @@ int main(int argc, char **argv)
      default:
        perm();
     }
- argc -= optind;
- argv += optind;
+ argc -= l.ind;
+ argv += l.ind;
 
  if (recipstrategy == RECIP_DEFAULT)
    recipstrategy = (*argv ? RECIP_ARGS : RECIP_HEADER);
@@ -784,7 +814,7 @@ int main(int argc, char **argv)
 
  flagrh = (recipstrategy != RECIP_ARGS);
 
- if (headerbody(subfdin,doheaderfield,finishheader,dobody) == -1)
+ if (headerbody(buffer_0,doheaderfield,finishheader,dobody) == -1)
    die_read();
  exitnicely();
 }
