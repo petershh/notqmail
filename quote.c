@@ -1,9 +1,17 @@
-#include "quote.h"
+#include <errno.h>
 
+#include <skalibs/bytestr.h>
+#include <skalibs/stralloc.h>
+
+/*
 #include "error.h"
-#include "oflops.h"
 #include "stralloc.h"
 #include "str.h"
+*/
+
+#include "quote.h"
+
+#include "oflops.h"
 
 /*
 quote() encodes a box as per rfc 821 and rfc 822,
@@ -19,9 +27,7 @@ static char ok[128] = {
 ,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7 ,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,0
 } ;
 
-static int doit(saout,sain)
-stralloc *saout;
-stralloc *sain;
+static int doit(stralloc *saout, stralloc *sain)
 {
  char ch;
  int i;
@@ -31,7 +37,7 @@ stralloc *sain;
  /* make sure the size calculation below does not overflow */
  if (__builtin_mul_overflow(sain->len, 2, &nlen) ||
      __builtin_add_overflow(nlen, 2, &nlen)) {
-   errno = error_nomem;
+   errno = ENOMEM;
    return 0;
  }
  if (!stralloc_ready(saout,nlen)) return 0;
@@ -49,9 +55,7 @@ stralloc *sain;
  return 1;
 }
 
-int quote_need(s,n)
-char *s;
-unsigned int n;
+int quote_need(char *s, unsigned int n)
 {
  unsigned char uch;
  int i;
@@ -68,19 +72,15 @@ unsigned int n;
  return 0;
 }
 
-int quote(saout,sain)
-stralloc *saout;
-stralloc *sain;
+int quote(stralloc *saout, stralloc *sain)
 {
  if (quote_need(sain->s,sain->len)) return doit(saout,sain);
  return stralloc_copy(saout,sain);
 }
 
-static stralloc foo = {0};
+static stralloc foo = STRALLOC_ZERO;
 
-int quote2(sa,s)
-stralloc *sa;
-char *s;
+int quote2(stralloc *sa, char *s)
 {
  int j;
  if (!*s) return stralloc_copys(sa,s);

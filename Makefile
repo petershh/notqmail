@@ -1547,7 +1547,7 @@ tryutmpx.c compile load qtmp.h1 qtmp.h2
 	rm -f tryutmpx.o tryutmpx
 
 quote.o: \
-compile quote.c stralloc.h gen_alloc.h str.h quote.h oflops.h error.h
+compile quote.c oflops.h
 	./compile quote.c
 
 rcpthosts.o: \
