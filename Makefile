@@ -1648,8 +1648,7 @@ compile sig_term.c sig.h
 	./compile sig_term.c
 
 slurpclose.o: \
-compile slurpclose.c stralloc.h gen_alloc.h readwrite.h slurpclose.h \
-error.h
+compile slurpclose.c slurpclose.h
 	./compile slurpclose.c
 
 socket.lib: \
