@@ -977,17 +977,14 @@ compile prot.c prot.h
 	./compile prot.c
 
 qbiff: \
-load qbiff.o headerbody.o hfield.o getln.a env.a open.a stralloc.a \
-substdio.a error.a str.a
-	./load qbiff headerbody.o hfield.o getln.a env.a open.a \
-	stralloc.a substdio.a error.a str.a
+load qbiff.o headerbody.o hfield.o getln.a
+	./load qbiff headerbody.o hfield.o getln.a -lskarnet
 
 qbiff.0: \
 qbiff.1
 
 qbiff.o: \
-compile qbiff.c readwrite.h stralloc.h gen_alloc.h substdio.h subfd.h \
-substdio.h open.h byte.h str.h headerbody.h hfield.h env.h exit.h qtmp.h
+compile qbiff.c headerbody.h hfield.h qtmp.h
 	./compile qbiff.c
 
 qmail-clean: \

@@ -1,6 +1,14 @@
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "qtmp.h"
+#include <unistd.h>
+
+#include <skalibs/stralloc.h>
+#include <skalibs/buffer.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/env.h>
+#include <skalibs/djbunix.h>
+
+/*
 #include "readwrite.h"
 #include "stralloc.h"
 #include "substdio.h"
@@ -8,28 +16,31 @@
 #include "open.h"
 #include "byte.h"
 #include "str.h"
-#include "headerbody.h"
-#include "hfield.h"
 #include "env.h"
 #include "exit.h"
+*/
 
-substdio sstty;
+#include "qtmp.h"
+#include "headerbody.h"
+#include "hfield.h"
+
+buffer btty;
 char buftty[1024];
 int fdtty;
 
 UTMP_INIT;
 char line[sizeof(ut->ut_line) + 1];
-stralloc woof = {0};
-stralloc tofrom = {0};
-stralloc text = {0};
+stralloc woof = STRALLOC_ZERO;
+stralloc tofrom = STRALLOC_ZERO;
+stralloc text = STRALLOC_ZERO;
 
-void doit(s,n) char *s; int n;
+void doit(char *s, int n)
 {
  if (!stralloc_catb(&text,s,n)) _exit(0);
  if (text.len > 78) text.len = 78;
 }
-void dobody(h) stralloc *h; { doit(h->s,h->len); }
-void doheader(h) stralloc *h;
+void dobody(stralloc *h) { doit(h->s,h->len); }
+void doheader(stralloc *h)
 {
  int i;
  if (hfield_known(h->s,h->len) == H_SUBJECT)
@@ -38,13 +49,13 @@ void doheader(h) stralloc *h;
    doit(h->s + i,h->len - i);
   }
 }
-void finishheader() { ; }
+void finishheader(void) { ; }
 
 int main(void)
 {
- char *user;
- char *sender;
- char *userext;
+ char const *user;
+ char const *sender;
+ char const *userext;
  struct stat st;
  int i;
 
@@ -66,7 +77,7 @@ int main(void)
      tofrom.s[i] = '_';
 
  if (!stralloc_copys(&text,"    ")) return 0;
- if (headerbody(subfdin,doheader,finishheader,dobody) == -1) return 0;
+ if (headerbody(buffer_0,doheader,finishheader,dobody) == -1) return 0;
 
  for (i = 0;i < text.len;++i)
    if ((text.s[i] < 32) || (text.s[i] > 126))
@@ -93,8 +104,8 @@ int main(void)
      if (fstat(fdtty,&st) == -1) { close(fdtty); continue; }
      if (!(st.st_mode & 0100)) { close(fdtty); continue; }
      if (st.st_uid != getuid()) { close(fdtty); continue; }
-     substdio_fdbuf(&sstty,write,fdtty,buftty,sizeof(buftty));
-     substdio_putflush(&sstty,woof.s,woof.len);
+     buffer_init(&btty,buffer_write,fdtty,buftty,sizeof(buftty));
+     buffer_putflush(&btty,woof.s,woof.len);
      close(fdtty);
     }
  return 0;
