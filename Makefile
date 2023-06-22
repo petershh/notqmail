@@ -1213,17 +1213,15 @@ timeoutread.h timeoutwrite.h auto_qmail.h control.h fmt.h
 
 qmail-qmqpd: \
 load qmail-qmqpd.o received.o date822fmt.o qmail.o auto_qmail.o \
-env.a substdio.a sig.a error.a wait.a fd.a str.a datetime.a fs.a
+datetime.a fs.a
 	./load qmail-qmqpd received.o date822fmt.o qmail.o \
-	auto_qmail.o env.a substdio.a sig.a error.a wait.a fd.a \
-	str.a datetime.a fs.a 
+	auto_qmail.o datetime.a fs.a -lskarnet
 
 qmail-qmqpd.0: \
 qmail-qmqpd.8
 
 qmail-qmqpd.o: \
-compile qmail-qmqpd.c auto_qmail.h qmail.h substdio.h received.h str.h \
-sig.h substdio.h readwrite.h exit.h now.h datetime.h fmt.h env.h byte.h
+compile qmail-qmqpd.c auto_qmail.h qmail.h now.h datetime.h fmt.h
 	./compile qmail-qmqpd.c
 
 qmail-qmtpd: \

@@ -1,48 +1,60 @@
-#include "auto_qmail.h"
-#include "qmail.h"
-#include "received.h"
+#include <unistd.h>
+#include <sys/uio.h>
+#include <signal.h>
+
+#include <skalibs/sig.h>
+#include <skalibs/buffer.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/types.h>
+#include <skalibs/env.h>
+
+/*
 #include "sig.h"
 #include "substdio.h"
 #include "readwrite.h"
 #include "exit.h"
-#include "now.h"
-#include "fmt.h"
 #include "byte.h"
 #include "env.h"
 #include "str.h"
+*/
+
+#include "fmt.h"
+#include "auto_qmail.h"
+#include "qmail.h"
+#include "received.h"
+#include "now.h"
 
 void resources() { _exit(111); }
 
-ssize_t safewrite(int fd, const void *buf, size_t len)
+ssize_t safewrite(int fd, const struct iovec *vbuf, unsigned int len)
 {
   ssize_t r;
-  r = write(fd,buf,len);
+  r = writev(fd,vbuf,len);
   if (r == 0 || r == -1) _exit(0);
   return r;
 }
-ssize_t saferead(int fd, void *buf, size_t len)
+ssize_t saferead(int fd, const struct iovec *vbuf, unsigned int len)
 {
   ssize_t r;
-  r = read(fd,buf,len);
+  r = readv(fd,vbuf,len);
   if (r == 0 || r == -1) _exit(0);
   return r;
 }
 
-char ssinbuf[512];
-substdio ssin = SUBSTDIO_FDBUF(saferead,0,ssinbuf,sizeof(ssinbuf));
-char ssoutbuf[256];
-substdio ssout = SUBSTDIO_FDBUF(safewrite,1,ssoutbuf,sizeof(ssoutbuf));
+char binbuf[512];
+buffer bin = BUFFER_INIT(saferead,0,binbuf,sizeof(binbuf));
+char boutbuf[256];
+buffer bout = BUFFER_INIT(safewrite,1,boutbuf,sizeof(boutbuf));
 
 unsigned long bytesleft = 100;
 
-void getbyte(ch)
-char *ch;
+void getbyte(char *ch)
 {
   if (!bytesleft--) _exit(100);
-  substdio_get(&ssin,ch,1);
+  buffer_get(&bin,ch,1);
 }
 
-unsigned long getlen()
+unsigned long getlen(void)
 {
   unsigned long len = 0;
   char ch;
@@ -55,7 +67,7 @@ unsigned long getlen()
   }
 }
 
-void getcomma()
+void getcomma(void)
 {
   char ch;
   getbyte(&ch);
@@ -64,12 +76,12 @@ void getcomma()
 
 struct qmail qq;
 
-void identify()
+void identify(void)
 {
-  char *remotehost;
-  char *remoteinfo;
-  char *remoteip;
-  char *local;
+  char const *remotehost;
+  char const *remoteinfo;
+  char const *remoteip;
+  char const *local;
 
   remotehost = env_get("TCPREMOTEHOST");
   if (!remotehost) remotehost = "unknown";
@@ -84,9 +96,9 @@ void identify()
 }
 
 char buf[1000];
-char strnum[FMT_ULONG];
+char strnum[ULONG_FMT];
 
-int getbuf()
+int getbuf(void)
 {
   unsigned long len;
   int i;
@@ -108,15 +120,15 @@ int getbuf()
 int flagok = 1;
 
 int
-main()
+main(void)
 {
   char *result;
   unsigned long qp;
   unsigned long len;
   char ch;
 
-  sig_pipeignore();
-  sig_alarmcatch(resources);
+  sig_ignore(SIGPIPE);
+  sig_catch(SIGALRM, resources);
   alarm(3600);
 
   bytesleft = getlen();
@@ -158,9 +170,9 @@ main()
 
   if (!*result) {
     len = fmt_str(buf,"Kok ");
-    len += fmt_ulong(buf + len,(unsigned long) now());
+    len += ulong_fmt(buf + len,(unsigned long) now());
     len += fmt_str(buf + len," qp ");
-    len += fmt_ulong(buf + len,qp);
+    len += ulong_fmt(buf + len,qp);
     buf[len] = 0;
     result = buf;
   }
@@ -168,10 +180,10 @@ main()
   if (!flagok)
     result = "Dsorry, I can't accept addresses like that (#5.1.3)";
 
-  substdio_put(&ssout,strnum,fmt_ulong(strnum,(unsigned long) str_len(result)));
-  substdio_puts(&ssout,":");
-  substdio_puts(&ssout,result);
-  substdio_puts(&ssout,",");
-  substdio_flush(&ssout);
+  buffer_put(&bout,strnum,ulong_fmt(strnum,(unsigned long) str_len(result)));
+  buffer_puts(&bout,":");
+  buffer_puts(&bout,result);
+  buffer_puts(&bout,",");
+  buffer_flush(&bout);
   _exit(0);
 }
