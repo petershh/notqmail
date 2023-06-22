@@ -1098,11 +1098,8 @@ auto_qmail.h auto_uids.h auto_users.h qlx.h spawn.h
 	./compile qmail-lspawn.c
 
 qmail-newmrh: \
-load qmail-newmrh.o cdbmss.o getln.a open.a cdbmake.a case.a \
-stralloc.a strerr.a substdio.a error.a str.a auto_qmail.o
-	./load qmail-newmrh cdbmss.o getln.a open.a cdbmake.a \
-	case.a stralloc.a strerr.a substdio.a \
-	error.a str.a auto_qmail.o 
+load qmail-newmrh.o getln.a auto_qmail.o
+	./load qmail-newmrh getln.a auto_qmail.o -lskarnet
 
 qmail-newmrh.0: \
 qmail-newmrh.8
@@ -1116,9 +1113,7 @@ qmail-newmrh.9 conf-qmail conf-break conf-spawn
 	> qmail-newmrh.8
 
 qmail-newmrh.o: \
-compile qmail-newmrh.c strerr.h stralloc.h gen_alloc.h substdio.h \
-getln.h exit.h readwrite.h open.h auto_qmail.h cdbmss.h cdbmake.h \
-uint32.h substdio.h case.h
+compile qmail-newmrh.c getln.h auto_qmail.h \
 	./compile qmail-newmrh.c
 
 qmail-newu: \
