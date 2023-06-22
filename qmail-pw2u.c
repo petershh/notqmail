@@ -1,71 +1,85 @@
+#include <errno.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
+
+#include <skalibs/bytestr.h>
+#include <skalibs/buffer.h>
+#include <skalibs/sgetopt.h>
+#include <skalibs/stralloc.h>
+#include <skalibs/types.h>
+#include <skalibs/djbunix.h>
+
+/*
 #include "byte.h"
 #include "substdio.h"
 #include "readwrite.h"
 #include "subfd.h"
 #include "sgetopt.h"
-#include "control.h"
-#include "constmap.h"
 #include "stralloc.h"
 #include "fmt.h"
 #include "str.h"
 #include "scan.h"
 #include "open.h"
 #include "error.h"
-#include "getln.h"
 #include "exit.h"
+*/
+
+#include "control.h"
+#include "constmap.h"
+#include "getln.h"
 #include "auto_break.h"
 #include "auto_qmail.h"
 #include "auto_users.h"
 
 void die_chdir()
 {
-  substdio_putsflush(subfderr,"qmail-pw2u: fatal: unable to chdir\n");
+  buffer_putsflush(buffer_2,"qmail-pw2u: fatal: unable to chdir\n");
   _exit(111);
 }
 void die_nomem()
 {
-  substdio_putsflush(subfderr,"qmail-pw2u: fatal: out of memory\n");
+  buffer_putsflush(buffer_2,"qmail-pw2u: fatal: out of memory\n");
   _exit(111);
 }
 void die_read()
 {
-  substdio_putsflush(subfderr,"qmail-pw2u: fatal: unable to read input\n");
+  buffer_putsflush(buffer_2,"qmail-pw2u: fatal: unable to read input\n");
   _exit(111);
 }
 void die_write()
 {
-  substdio_putsflush(subfderr,"qmail-pw2u: fatal: unable to write output\n");
+  buffer_putsflush(buffer_2,"qmail-pw2u: fatal: unable to write output\n");
   _exit(111);
 }
 void die_control()
 {
-  substdio_putsflush(subfderr,"qmail-pw2u: fatal: unable to read controls\n");
+  buffer_putsflush(buffer_2,"qmail-pw2u: fatal: unable to read controls\n");
   _exit(111);
 }
 void die_alias()
 {
-  substdio_puts(subfderr,"qmail-pw2u: fatal: unable to find ");
-  substdio_puts(subfderr,auto_usera);
-  substdio_puts(subfderr," user\n");
-  substdio_flush(subfderr);
+  buffer_puts(buffer_2,"qmail-pw2u: fatal: unable to find ");
+  buffer_puts(buffer_2,auto_usera);
+  buffer_puts(buffer_2," user\n");
+  buffer_flush(buffer_2);
   _exit(111);
 }
 void die_home(fn) char *fn;
 {
-  substdio_puts(subfderr,"qmail-pw2u: fatal: unable to stat ");
-  substdio_puts(subfderr,fn);
-  substdio_puts(subfderr,"\n");
-  substdio_flush(subfderr);
+  buffer_puts(buffer_2,"qmail-pw2u: fatal: unable to stat ");
+  buffer_puts(buffer_2,fn);
+  buffer_puts(buffer_2,"\n");
+  buffer_flush(buffer_2);
   _exit(111);
 }
 void die_user(s,len) char *s; unsigned int len;
 {
-  substdio_puts(subfderr,"qmail-pw2u: fatal: unable to find ");
-  substdio_put(subfderr,s,len);
-  substdio_puts(subfderr," user for subuser\n");
-  substdio_flush(subfderr);
+  buffer_puts(buffer_2,"qmail-pw2u: fatal: unable to find ");
+  buffer_put(buffer_2,s,len);
+  buffer_puts(buffer_2," user for subuser\n");
+  buffer_flush(buffer_2);
   _exit(111);
 }
 
@@ -77,22 +91,22 @@ int homestrategy = 2;
 /* 1: stop if home does not exist; skip if home is not owned by user */
 /* 0: don't worry about home */
 
-int okincl; stralloc incl = {0}; struct constmap mapincl;
-int okexcl; stralloc excl = {0}; struct constmap mapexcl;
-int okmana; stralloc mana = {0}; struct constmap mapmana;
+int okincl; stralloc incl = STRALLOC_ZERO; struct constmap mapincl;
+int okexcl; stralloc excl = STRALLOC_ZERO; struct constmap mapexcl;
+int okmana; stralloc mana = STRALLOC_ZERO; struct constmap mapmana;
 
-stralloc allusers = {0}; struct constmap mapuser;
+stralloc allusers = STRALLOC_ZERO; struct constmap mapuser;
 
-stralloc uugh = {0};
-stralloc user = {0};
-stralloc uidstr = {0};
-stralloc gidstr = {0};
-stralloc home = {0};
+stralloc uugh = STRALLOC_ZERO;
+stralloc user = STRALLOC_ZERO;
+stralloc uidstr = STRALLOC_ZERO;
+stralloc gidstr = STRALLOC_ZERO;
+stralloc home = STRALLOC_ZERO;
 unsigned long uid;
 
-stralloc line = {0};
+stralloc line = STRALLOC_ZERO;
 
-void doaccount()
+void doaccount(void)
 {
   struct stat st;
   int i;
@@ -109,7 +123,7 @@ void doaccount()
   ++i; x += i; xlen -= i; i = byte_chr(x,xlen,':'); if (i == xlen) return;
   if (!stralloc_copyb(&uidstr,x,i)) die_nomem();
   if (!stralloc_0(&uidstr)) die_nomem();
-  scan_ulong(uidstr.s,&uid);
+  ulong_scan(uidstr.s,&uid);
   ++i; x += i; xlen -= i; i = byte_chr(x,xlen,':'); if (i == xlen) return;
   if (!stralloc_copyb(&gidstr,x,i)) die_nomem();
   if (!stralloc_0(&gidstr)) die_nomem();
@@ -131,7 +145,7 @@ void doaccount()
       return;
   if (homestrategy) {
     if (stat(home.s,&st) == -1) {
-      if (errno != error_noent) die_home(home.s);
+      if (errno != ENOENT) die_home(home.s);
       if (homestrategy == 1) die_home(home.s);
       return;
     }
@@ -155,10 +169,10 @@ void doaccount()
   if (!stralloc_0(&allusers)) die_nomem();
 
   if (str_equal(user.s,auto_usera)) {
-    if (substdio_puts(subfdout,"+") == -1) die_write();
-    if (substdio_put(subfdout,uugh.s,uugh.len) == -1) die_write();
-    if (substdio_puts(subfdout,dashcolon) == -1) die_write();
-    if (substdio_puts(subfdout,":\n") == -1) die_write();
+    if (buffer_puts(buffer_1,"+") == -1) die_write();
+    if (buffer_put(buffer_1,uugh.s,uugh.len) == -1) die_write();
+    if (buffer_puts(buffer_1,dashcolon) == -1) die_write();
+    if (buffer_puts(buffer_1,":\n") == -1) die_write();
     flagalias = 1;
   }
 
@@ -174,27 +188,27 @@ void doaccount()
 
     i = str_chr(mailnames,':');
 
-    if (substdio_puts(subfdout,"=") == -1) die_write();
-    if (substdio_put(subfdout,mailnames,i) == -1) die_write();
-    if (substdio_put(subfdout,uugh.s,uugh.len) == -1) die_write();
-    if (substdio_puts(subfdout,"::\n") == -1) die_write();
+    if (buffer_puts(buffer_1,"=") == -1) die_write();
+    if (buffer_put(buffer_1,mailnames,i) == -1) die_write();
+    if (buffer_put(buffer_1,uugh.s,uugh.len) == -1) die_write();
+    if (buffer_puts(buffer_1,"::\n") == -1) die_write();
   
     if (*auto_break) {
-      if (substdio_puts(subfdout,"+") == -1) die_write();
-      if (substdio_put(subfdout,mailnames,i) == -1) die_write();
-      if (substdio_put(subfdout,auto_break,1) == -1) die_write();
-      if (substdio_put(subfdout,uugh.s,uugh.len) == -1) die_write();
-      if (substdio_puts(subfdout,dashcolon) == -1) die_write();
-      if (substdio_puts(subfdout,":\n") == -1) die_write();
+      if (buffer_puts(buffer_1,"+") == -1) die_write();
+      if (buffer_put(buffer_1,mailnames,i) == -1) die_write();
+      if (buffer_put(buffer_1,auto_break,1) == -1) die_write();
+      if (buffer_put(buffer_1,uugh.s,uugh.len) == -1) die_write();
+      if (buffer_puts(buffer_1,dashcolon) == -1) die_write();
+      if (buffer_puts(buffer_1,":\n") == -1) die_write();
     }
 
     mailnames += i;
   }
 }
 
-stralloc sub = {0};
+stralloc sub = STRALLOC_ZERO;
 
-void dosubuser()
+void dosubuser(void)
 {
   int i;
   char *x;
@@ -208,34 +222,35 @@ void dosubuser()
   if (!u) die_user(x,i);
   ++i; x += i; xlen -= i; i = byte_chr(x,xlen,':'); if (i == xlen) return;
 
-  if (substdio_puts(subfdout,"=") == -1) die_write();
-  if (substdio_put(subfdout,sub.s,sub.len) == -1) die_write();
-  if (substdio_puts(subfdout,u) == -1) die_write();
-  if (substdio_puts(subfdout,dashcolon) == -1) die_write();
-  if (substdio_put(subfdout,x,i) == -1) die_write();
-  if (substdio_puts(subfdout,":\n") == -1) die_write();
+  if (buffer_puts(buffer_1,"=") == -1) die_write();
+  if (buffer_put(buffer_1,sub.s,sub.len) == -1) die_write();
+  if (buffer_puts(buffer_1,u) == -1) die_write();
+  if (buffer_puts(buffer_1,dashcolon) == -1) die_write();
+  if (buffer_put(buffer_1,x,i) == -1) die_write();
+  if (buffer_puts(buffer_1,":\n") == -1) die_write();
 
   if (*auto_break) {
-    if (substdio_puts(subfdout,"+") == -1) die_write();
-    if (substdio_put(subfdout,sub.s,sub.len) == -1) die_write();
-    if (substdio_put(subfdout,auto_break,1) == -1) die_write();
-    if (substdio_puts(subfdout,u) == -1) die_write();
-    if (substdio_puts(subfdout,dashcolon) == -1) die_write();
-    if (substdio_put(subfdout,x,i) == -1) die_write();
-    if (substdio_puts(subfdout,"-:\n") == -1) die_write();
+    if (buffer_puts(buffer_1,"+") == -1) die_write();
+    if (buffer_put(buffer_1,sub.s,sub.len) == -1) die_write();
+    if (buffer_put(buffer_1,auto_break,1) == -1) die_write();
+    if (buffer_puts(buffer_1,u) == -1) die_write();
+    if (buffer_puts(buffer_1,dashcolon) == -1) die_write();
+    if (buffer_put(buffer_1,x,i) == -1) die_write();
+    if (buffer_puts(buffer_1,"-:\n") == -1) die_write();
   }
 }
 
 int fd;
-substdio ss;
-char ssbuf[SUBSTDIO_INSIZE];
+buffer b;
+char bbuf[BUFFER_INSIZE];
 
 int main(int argc, char **argv)
 {
   int opt;
   int match;
+  subgetopt l = SUBGETOPT_ZERO;
 
-  while ((opt = getopt(argc,argv,"/ohHuUc:C")) != opteof)
+  while ((opt = subgetopt_r(argc,(char const *const *)argv,"/ohHuUc:C",&l)) != -1)
     switch(opt) {
       case '/': dashcolon = "-/:"; break;
       case 'o': homestrategy = 2; break;
@@ -243,7 +258,7 @@ int main(int argc, char **argv)
       case 'H': homestrategy = 0; break;
       case 'u': flagnoupper = 0; break;
       case 'U': flagnoupper = 1; break;
-      case 'c': *auto_break = *optarg; break;
+      case 'c': *auto_break = *l.arg; break;
       case 'C': *auto_break = 0; break;
       case '?':
       default:
@@ -269,7 +284,7 @@ int main(int argc, char **argv)
   if (!stralloc_copys(&allusers,"")) die_nomem();
 
   for (;;) {
-    if (getln(subfdin,&line,&match,'\n') == -1) die_read();
+    if (getln(buffer_0,&line,&match,'\n') == -1) die_read();
     doaccount();
     if (!match) break;
   }
@@ -277,15 +292,15 @@ int main(int argc, char **argv)
 
   fd = open_read("users/subusers");
   if (fd == -1) {
-    if (errno != error_noent) die_control();
+    if (errno != ENOENT) die_control();
   }
   else {
-    substdio_fdbuf(&ss,read,fd,ssbuf,sizeof(ssbuf));
+    buffer_init(&b,buffer_read,fd,bbuf,sizeof(bbuf));
 
     if (!constmap_init(&mapuser,allusers.s,allusers.len,1)) die_nomem();
 
     for (;;) {
-      if (getln(&ss,&line,&match,'\n') == -1) die_read();
+      if (getln(&b,&line,&match,'\n') == -1) die_read();
       dosubuser();
       if (!match) break;
     }
@@ -295,18 +310,18 @@ int main(int argc, char **argv)
 
   fd = open_read("users/append");
   if (fd == -1) {
-    if (errno != error_noent) die_control();
+    if (errno != ENOENT) die_control();
   }
   else {
-    substdio_fdbuf(&ss,read,fd,ssbuf,sizeof(ssbuf));
+    buffer_init(&b,buffer_read,fd,bbuf,sizeof(bbuf));
     for (;;) {
-      if (getln(&ss,&line,&match,'\n') == -1) die_read();
-      if (substdio_put(subfdout,line.s,line.len) == -1) die_write();
+      if (getln(&b,&line,&match,'\n') == -1) die_read();
+      if (buffer_put(buffer_1,line.s,line.len) == -1) die_write();
       if (!match) break;
     }
   }
 
-  if (substdio_puts(subfdout,".\n") == -1) die_write();
-  if (substdio_flush(subfdout) == -1) die_write();
+  if (buffer_puts(buffer_1,".\n") == -1) die_write();
+  if (buffer_flush(buffer_1) == -1) die_write();
   return 0;
 }

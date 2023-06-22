@@ -1172,12 +1172,10 @@ readwrite.h timeoutread.h timeoutwrite.h
 	./compile qmail-popup.c
 
 qmail-pw2u: \
-load qmail-pw2u.o constmap.o control.o open.a getln.a case.a getopt.a \
-stralloc.a substdio.a error.a str.a fs.a ids.a \
-auto_break.o auto_qmail.o
-	./load qmail-pw2u constmap.o control.o open.a getln.a \
-	case.a getopt.a stralloc.a substdio.a error.a str.a \
-	fs.a ids.a auto_break.o auto_qmail.o
+load qmail-pw2u.o constmap.o control.o getln.a \
+ids.a auto_break.o auto_qmail.o
+	./load qmail-pw2u constmap.o control.o getln.a \
+	ids.a auto_break.o auto_qmail.o -lskarnet
 
 qmail-pw2u.0: \
 qmail-pw2u.8
@@ -1191,10 +1189,8 @@ qmail-pw2u.9 conf-qmail conf-break conf-spawn
 	> qmail-pw2u.8
 
 qmail-pw2u.o: \
-compile qmail-pw2u.c substdio.h readwrite.h subfd.h substdio.h \
-sgetopt.h subgetopt.h control.h constmap.h stralloc.h gen_alloc.h \
-fmt.h str.h scan.h open.h error.h getln.h exit.h auto_break.h auto_qmail.h \
-auto_users.h byte.h
+compile qmail-pw2u.c control.h constmap.h getln.h auto_break.h \
+auto_qmail.h auto_users.h
 	./compile qmail-pw2u.c
 
 qmail-qmqpc: \
