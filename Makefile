@@ -1651,9 +1651,7 @@ trylsock.c compile load
 	rm -f trylsock.o trylsock
 
 spawn.o: \
-compile chkspawn spawn.c sig.h wait.h substdio.h byte.h str.h \
-stralloc.h gen_alloc.h select.h exit.h alloc.h coe.h open.h error.h \
-auto_qmail.h auto_uids.h auto_spawn.h spawn.h
+compile chkspawn spawn.c auto_qmail.h auto_uids.h auto_spawn.h spawn.h
 	./chkspawn
 	./compile spawn.c
 

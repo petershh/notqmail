@@ -1,7 +1,23 @@
-#include "spawn.h"
+#include <errno.h>
 
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <signal.h>
+#include <sys/uio.h>
+
+#include <skalibs/sig.h>
+#include <skalibs/buffer.h>
+#include <skalibs/djbunix.h>
+#include <skalibs/stralloc.h>
+#include <skalibs/alloc.h>
+#include <skalibs/iopause.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/allreadwrite.h>
+
+#include "spawn.h"
+
+/*
 #include "sig.h"
 #include "wait.h"
 #include "substdio.h"
@@ -14,6 +30,8 @@
 #include "coe.h"
 #include "open.h"
 #include "error.h"
+*/
+
 #include "auto_qmail.h"
 #include "auto_uids.h"
 #include "auto_spawn.h"
@@ -49,31 +67,32 @@ void sigchld()
 
 int flagwriting = 1;
 
-ssize_t okwrite(int fd, const void *buf, size_t n)
+ssize_t okwrite(int fd, struct iovec const *vbuf, unsigned int n)
 {
  int w;
  if (!flagwriting) return n;
- w = write(fd,buf,n);
+ w = writev(fd,vbuf,n);
  if (w != -1) return w;
- if (errno == error_intr) return -1;
+ if (errno == EINTR) return -1;
  flagwriting = 0; close(fd);
  return n;
 }
 
 int flagreading = 1;
-char outbuf[1024]; substdio ssout;
+char outbuf[1024];
+buffer bout;
 
 int stage = 0; /* reading 0:delnum 1:messid 2:sender 3:recip */
 int flagabort = 0; /* if 1, everything except delnum is garbage */
 int delnum;
-stralloc messid = {0};
-stralloc sender = {0};
-stralloc recip = {0};
+stralloc messid = STRALLOC_ZERO;
+stralloc sender = STRALLOC_ZERO;
+stralloc recip = STRALLOC_ZERO;
 
-void err(s) char *s;
+void err(char *s)
 {
- char ch; ch = delnum; substdio_put(&ssout,&ch,1);
- substdio_puts(&ssout,s); substdio_putflush(&ssout,"",1);
+ char ch; ch = delnum; buffer_put(&bout,&ch,1);
+ buffer_puts(&bout,s); buffer_putflush(&bout,"",1);
 }
 
 void docmd()
@@ -143,7 +162,7 @@ void getcmd()
   { flagreading = 0; return; }
  if (r == -1)
   {
-   if (errno != error_intr)
+   if (errno != EINTR)
      flagreading = 0;
    return;
   }
@@ -157,15 +176,15 @@ void getcmd()
        delnum = (unsigned int) (unsigned char) ch;
        messid.len = 0; stage = 1; break;
      case 1:
-       if (!stralloc_append(&messid,&ch)) flagabort = 1;
+       if (!stralloc_append(&messid,ch)) flagabort = 1;
        if (ch) break;
        sender.len = 0; stage = 2; break;
      case 2:
-       if (!stralloc_append(&sender,&ch)) flagabort = 1;
+       if (!stralloc_append(&sender,ch)) flagabort = 1;
        if (ch) break;
        recip.len = 0; stage = 3; break;
      case 3:
-       if (!stralloc_append(&recip,&ch)) flagabort = 1;
+       if (!stralloc_append(&recip,ch)) flagabort = 1;
        if (ch) break;
        docmd();
        flagabort = 0; stage = 0; break;
@@ -180,8 +199,8 @@ int main(int argc, char **argv)
  char ch;
  int i;
  int r;
- fd_set rfds;
- int nfds;
+ iopause_fd *rfds;
+ unsigned int nfds;
 
  if (chdir(auto_qmail) == -1) _exit(111);
  if (chdir("queue/mess") == -1) _exit(111);
@@ -192,66 +211,76 @@ int main(int argc, char **argv)
  d = (struct delivery *) alloc((auto_spawn + 10) * sizeof(struct delivery));
  if (!d) _exit(111);
 
- substdio_fdbuf(&ssout,okwrite,1,outbuf,sizeof(outbuf));
+ rfds = (iopause_fd *) alloc((auto_spawn + 1) * sizeof(iopause_fd));
+ if (!rfds) _exit(111);
 
- sig_pipeignore();
- sig_childcatch(sigchld);
+ buffer_init(&bout,okwrite,1,outbuf,sizeof(outbuf));
+
+ sig_ignore(SIGPIPE);
+ sig_catch(SIGCHLD, sigchld);
 
  initialize(argc,argv);
 
- ch = auto_spawn; substdio_putflush(&ssout,&ch,1);
+ ch = auto_spawn; buffer_putflush(&bout,&ch,1);
 
  for (i = 0;i < auto_spawn;++i) { d[i].used = 0; d[i].output.s = 0; }
 
- for (;;)
-  {
-   if (!flagreading)
-    {
+ for (;;) { /* XXX: should use self-pipe instead of messing with SIGCHLD */
+   if (!flagreading) {
      for (i = 0;i < auto_spawn;++i) if (d[i].used) break;
      if (i >= auto_spawn) _exit(0);
-    }
-   sig_childunblock();
+   }
+   sig_unblock(SIGCHLD);
 
-   FD_ZERO(&rfds);
-   if (flagreading) FD_SET(0,&rfds);
-   nfds = 1;
-   for (i = 0;i < auto_spawn;++i) if (d[i].used)
-    { FD_SET(d[i].fdin,&rfds); if (d[i].fdin >= nfds) nfds = d[i].fdin + 1; }
+   nfds = 0;
+   if (flagreading) {
+     rfds[0].fd = 0;
+     rfds[0].events = IOPAUSE_READ;
+     nfds = 1;
+   }
+   for (i = 0;i < auto_spawn;++i)
+     if (d[i].used) {
+       rfds[nfds].fd = d[i].fdin;
+       rfds[nfds].events = IOPAUSE_READ;
+       nfds++;
+     }
 
-   r = select(nfds,&rfds,NULL,NULL,NULL);
-   sig_childblock();
+   r = iopause(rfds, nfds, NULL, NULL);
+   sig_block(SIGCHLD);
 
-   if (r != -1)
-    {
+   if (r != -1) {
+     int j = 0;
      if (flagreading)
-       if (FD_ISSET(0,&rfds))
-	 getcmd();
-     for (i = 0;i < auto_spawn;++i) if (d[i].used)
-       if (FD_ISSET(d[i].fdin,&rfds))
-	{
-	 r = read(d[i].fdin,inbuf,128);
-	 if (r == -1)
-	   continue; /* read error on a readable pipe? be serious */
-	 if (r == 0)
-	  {
-           ch = i; substdio_put(&ssout,&ch,1);
-	   report(&ssout,d[i].wstat,d[i].output.s,d[i].output.len);
-	   substdio_put(&ssout,"",1);
-	   substdio_flush(&ssout);
-	   close(d[i].fdin); d[i].used = 0;
-	   continue;
-	  }
-	 while (!stralloc_readyplus(&d[i].output,r)) sleep(10); /*XXX*/
-	 byte_copy(d[i].output.s + d[i].output.len,r,inbuf);
-	 d[i].output.len += r;
-	 if (truncreport > 100)
-	   if (d[i].output.len > truncreport)
-	    {
-	     char *truncmess = "\nError report too long, sorry.\n";
-	     d[i].output.len = truncreport - str_len(truncmess) - 3;
-	     stralloc_cats(&d[i].output,truncmess);
-	    }
-	}
-    }
-  }
+       if (rfds[0].revents | IOPAUSE_READ) {
+         getcmd();
+         j = 1;
+       }
+     for (i = 0;i < auto_spawn;++i)
+       if (d[i].used) {
+         if (rfds[j].revents | IOPAUSE_READ) {
+           r = read(d[i].fdin,inbuf,128);
+           if (r == -1)
+             continue; /* read error on a readable pipe? be serious */
+           if (r == 0) {
+             ch = i; buffer_put(&bout,&ch,1);
+             report(&bout,d[i].wstat,d[i].output.s,d[i].output.len);
+             buffer_put(&bout,"",1);
+             buffer_flush(&bout);
+             close(d[i].fdin); d[i].used = 0;
+             continue;
+           }
+           while (!stralloc_readyplus(&d[i].output,r)) sleep(10); /*XXX*/
+           byte_copy(d[i].output.s + d[i].output.len,r,inbuf);
+           d[i].output.len += r;
+           if (truncreport > 100)
+             if (d[i].output.len > truncreport) {
+               char *truncmess = "\nError report too long, sorry.\n";
+               d[i].output.len = truncreport - str_len(truncmess) - 3;
+               stralloc_cats(&d[i].output,truncmess);
+             }
+         }
+         j++;
+       }
+   }
+ }
 }
