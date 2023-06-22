@@ -35,16 +35,16 @@ int main(void)
 
     if (auto_spawn > maxnumd) {
         buffer_puts(buffer_2, "Oops. Your system's FD_SET() has a hidden limit of ");
-        buffer_put(buffer_2, num, fmt_ulong(num,hiddenlimit));
+        buffer_put(buffer_2, num, ulong_fmt(num,hiddenlimit));
         buffer_puts(buffer_2, " descriptors.\n\
                 This means that the qmail daemons could crash if you set the run-time\n\
                 concurrency higher than ");
-        buffer_put(buffer_2,num, fmt_ulong(num,maxnumd));
+        buffer_put(buffer_2,num, ulong_fmt(num,maxnumd));
         buffer_puts(buffer_2, ". So I'm going to insist that the concurrency\n\
                 limit in conf-spawn be at most ");
-        buffer_put(buffer_2, num, fmt_ulong(num,maxnumd));
+        buffer_put(buffer_2, num, ulong_fmt(num,maxnumd));
         buffer_puts(buffer_2, ". Right now it's ");
-        buffer_put(buffer_2, num, fmt_ulong(num,(unsigned long) auto_spawn));
+        buffer_put(buffer_2, num, ulong_fmt(num,(unsigned long) auto_spawn));
         buffer_puts(buffer_2, ".\n");
         buffer_flush(buffer_2);
         return 1;
