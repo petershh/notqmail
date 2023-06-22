@@ -1,7 +1,17 @@
+#include <stdio.h>
+
 #include <sys/stat.h>
+#include <unistd.h>
+
+#include <skalibs/stralloc.h>
+#include <skalibs/buffer.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/djbunix.h>
+#include <skalibs/cdbmake.h>
+
+/*
 #include "stralloc.h"
 #include "subfd.h"
-#include "getln.h"
 #include "substdio.h"
 #include "byte.h"
 #include "cdbmss.h"
@@ -10,67 +20,68 @@
 #include "open.h"
 #include "error.h"
 #include "case.h"
-#include "auto_qmail.h"
+*/
 
-extern int rename(const char *, const char *);
+#include "getln.h"
+#include "auto_qmail.h"
 
 void die_temp() { _exit(111); }
 
 void die_chdir()
 {
-  substdio_putsflush(subfderr,"qmail-newu: fatal: unable to chdir\n");
+  buffer_putsflush(buffer_2,"qmail-newu: fatal: unable to chdir\n");
   die_temp();
 }
 void die_nomem()
 {
-  substdio_putsflush(subfderr,"qmail-newu: fatal: out of memory\n");
+  buffer_putsflush(buffer_2,"qmail-newu: fatal: out of memory\n");
   die_temp();
 }
 void die_opena()
 {
-  substdio_putsflush(subfderr,"qmail-newu: fatal: unable to open users/assign\n");
+  buffer_putsflush(buffer_2,"qmail-newu: fatal: unable to open users/assign\n");
   die_temp();
 }
 void die_reada()
 {
-  substdio_putsflush(subfderr,"qmail-newu: fatal: unable to read users/assign\n");
+  buffer_putsflush(buffer_2,"qmail-newu: fatal: unable to read users/assign\n");
   die_temp();
 }
 void die_format()
 {
-  substdio_putsflush(subfderr,"qmail-newu: fatal: bad format in users/assign\n");
+  buffer_putsflush(buffer_2,"qmail-newu: fatal: bad format in users/assign\n");
   die_temp();
 }
 void die_opent()
 {
-  substdio_putsflush(subfderr,"qmail-newu: fatal: unable to open users/cdb.tmp\n");
+  buffer_putsflush(buffer_2,"qmail-newu: fatal: unable to open users/cdb.tmp\n");
   die_temp();
 }
 void die_writet()
 {
-  substdio_putsflush(subfderr,"qmail-newu: fatal: unable to write users/cdb.tmp\n");
+  buffer_putsflush(buffer_2,"qmail-newu: fatal: unable to write users/cdb.tmp\n");
   die_temp();
 }
 void die_rename()
 {
-  substdio_putsflush(subfderr,"qmail-newu: fatal: unable to move users/cdb.tmp to users/cdb\n");
+  buffer_putsflush(buffer_2,"qmail-newu: fatal: unable to move users/cdb.tmp to users/cdb\n");
   die_temp();
 }
 
-struct cdbmss cdbmss;
-stralloc key = {0};
-stralloc data = {0};
+cdbmaker maker = CDBMAKER_ZERO;
+stralloc key = STRALLOC_ZERO;
+stralloc data = STRALLOC_ZERO;
 
 char inbuf[1024];
-substdio ssin;
+buffer bin;
 
 int fd;
 int fdtemp;
 
-stralloc line = {0};
+stralloc line = STRALLOC_ZERO;
 int match;
 
-stralloc wildchars = {0};
+stralloc wildchars = STRALLOC_ZERO;
 
 int main(void)
 {
@@ -83,17 +94,17 @@ int main(void)
   fd = open_read("users/assign");
   if (fd == -1) die_opena();
 
-  substdio_fdbuf(&ssin,read,fd,inbuf,sizeof(inbuf));
+  buffer_init(&bin,buffer_read,fd,inbuf,sizeof(inbuf));
 
   fdtemp = open_trunc("users/cdb.tmp");
   if (fdtemp == -1) die_opent();
 
-  if (cdbmss_start(&cdbmss,fdtemp) == -1) die_writet();
+  if (cdbmake_start(&maker,fdtemp) == 0) die_writet();
 
   if (!stralloc_copys(&wildchars,"")) die_nomem();
 
   for (;;) {
-    if (getln(&ssin,&line,&match,'\n') != 0) die_reada();
+    if (getln(&bin,&line,&match,'\n') != 0) die_reada();
     if (line.len && (line.s[0] == '.')) break;
     if (!match) die_format();
 
@@ -107,7 +118,7 @@ int main(void)
       case_lowerb(key.s,key.len);
       if (i >= 2)
 	if (byte_chr(wildchars.s,wildchars.len,line.s[i - 1]) == wildchars.len)
-	  if (!stralloc_append(&wildchars,line.s + i - 1)) die_nomem();
+	  if (!stralloc_append(&wildchars,line.s[i - 1])) die_nomem();
     }
     else {
       if (!stralloc_catb(&key,line.s + 1,i - 1)) die_nomem();
@@ -127,12 +138,12 @@ int main(void)
     if (numcolons < 6) die_format();
     data.len = i;
 
-    if (cdbmss_add(&cdbmss,key.s,key.len,data.s,data.len) == -1) die_writet();
+    if (cdbmake_add(&maker,key.s,key.len,data.s,data.len) == 0) die_writet();
   }
 
-  if (cdbmss_add(&cdbmss,"",0,wildchars.s,wildchars.len) == -1) die_writet();
+  if (cdbmake_add(&maker,"",0,wildchars.s,wildchars.len) == 0) die_writet();
 
-  if (cdbmss_finish(&cdbmss) == -1) die_writet();
+  if (cdbmake_finish(&maker) == -1) die_writet();
   if (fsync(fdtemp) == -1) die_writet();
   if (close(fdtemp) == -1) die_writet(); /* NFS stupidity */
   if (rename("users/cdb.tmp","users/cdb") == -1) die_rename();

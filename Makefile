@@ -1117,11 +1117,8 @@ compile qmail-newmrh.c getln.h auto_qmail.h \
 	./compile qmail-newmrh.c
 
 qmail-newu: \
-load qmail-newu.o cdbmss.o getln.a open.a cdbmake.a case.a \
-stralloc.a substdio.a error.a str.a auto_qmail.o
-	./load qmail-newu cdbmss.o getln.a open.a cdbmake.a \
-	case.a stralloc.a substdio.a error.a str.a \
-	auto_qmail.o 
+load qmail-newu.o getln.a auto_qmail.o
+	./load qmail-newu getln.a auto_qmail.o -lskarnet
 
 qmail-newu.0: \
 qmail-newu.8
@@ -1135,9 +1132,7 @@ qmail-newu.9 conf-qmail conf-break conf-spawn
 	> qmail-newu.8
 
 qmail-newu.o: \
-compile qmail-newu.c stralloc.h gen_alloc.h subfd.h substdio.h \
-getln.h substdio.h cdbmss.h cdbmake.h uint32.h substdio.h exit.h \
-readwrite.h open.h error.h case.h auto_qmail.h byte.h
+compile qmail-newu.c getln.h auto_qmail.h
 	./compile qmail-newu.c
 
 qmail-pop3d: \
