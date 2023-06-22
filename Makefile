@@ -1084,21 +1084,17 @@ qmail-log.0: \
 qmail-log.5
 
 qmail-lspawn: \
-load qmail-lspawn.o spawn.o prot.o slurpclose.o coe.o sig.a wait.a \
-case.a cdb.a fd.a open.a stralloc.a ids.a substdio.a error.a str.a \
-fs.a auto_qmail.o auto_spawn.o
-	./load qmail-lspawn spawn.o prot.o slurpclose.o coe.o sig.a wait.a \
-	case.a cdb.a fd.a open.a stralloc.a auto_qmail.o \
-	auto_spawn.o ids.a substdio.a error.a str.a fs.a
+load qmail-lspawn.o spawn.o prot.o slurpclose.o \
+ids.a fs.a auto_qmail.o auto_spawn.o
+	./load qmail-lspawn spawn.o prot.o slurpclose.o \
+	auto_qmail.o auto_spawn.o ids.a fs.a -lskarnet
 
 qmail-lspawn.0: \
 qmail-lspawn.8
 
 qmail-lspawn.o: \
-compile qmail-lspawn.c fd.h wait.h prot.h substdio.h stralloc.h \
-gen_alloc.h scan.h exit.h fork.h error.h cdb.h uint32.h case.h \
-slurpclose.h uidgid.h auto_qmail.h auto_uids.h auto_users.h qlx.h byte.h \
-open.h spawn.h
+compile qmail-lspawn.c prot.h wait.h slurpclose.h uidgid.h \
+auto_qmail.h auto_uids.h auto_users.h qlx.h spawn.h
 	./compile qmail-lspawn.c
 
 qmail-newmrh: \

@@ -1,7 +1,17 @@
+#include <errno.h>
+
+#include <unistd.h>
+
+#include <skalibs/stralloc.h>
+#include <skalibs/djbunix.h>
+#include <skalibs/buffer.h>
+#include <skalibs/types.h>
+#include <skalibs/cdb.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/error.h>
+
+/*
 #include "fd.h"
-#include "spawn.h"
-#include "wait.h"
-#include "prot.h"
 #include "substdio.h"
 #include "stralloc.h"
 #include "scan.h"
@@ -12,6 +22,11 @@
 #include "cdb.h"
 #include "case.h"
 #include "open.h"
+*/
+
+#include "spawn.h"
+#include "prot.h"
+#include "wait.h"
 #include "slurpclose.h"
 #include "uidgid.h"
 #include "auto_qmail.h"
@@ -25,9 +40,7 @@ uid_t auto_uidp;
 
 gid_t auto_gidn;
 
-void initialize(argc,argv)
-int argc;
-char **argv;
+void initialize(int argc, char **argv)
 {
   aliasempty = argv[1];
   if (!aliasempty) _exit(100);
@@ -40,56 +53,51 @@ char **argv;
 
 int truncreport = 3000;
 
-void report(ss,wstat,s,len)
-substdio *ss;
-int wstat;
-char *s;
-int len;
+void report(buffer *b, int wstat, char *s, int len)
 {
  int i;
  if (wait_crashed(wstat))
-  { substdio_puts(ss,"Zqmail-local crashed.\n"); return; }
+  { buffer_puts(b,"Zqmail-local crashed.\n"); return; }
  switch(wait_exitcode(wstat))
   {
    case QLX_CDB:
-     substdio_puts(ss,"ZTrouble reading users/cdb in qmail-lspawn.\n"); return;
+     buffer_puts(b,"ZTrouble reading users/cdb in qmail-lspawn.\n"); return;
    case QLX_NOMEM:
-     substdio_puts(ss,"ZOut of memory in qmail-lspawn.\n"); return;
+     buffer_puts(b,"ZOut of memory in qmail-lspawn.\n"); return;
    case QLX_SYS:
-     substdio_puts(ss,"ZTemporary failure in qmail-lspawn.\n"); return;
+     buffer_puts(b,"ZTemporary failure in qmail-lspawn.\n"); return;
    case QLX_NOALIAS:
-     substdio_puts(ss,"ZUnable to find alias user!\n"); return;
+     buffer_puts(b,"ZUnable to find alias user!\n"); return;
    case QLX_ROOT:
-     substdio_puts(ss,"ZNot allowed to perform deliveries as root.\n"); return;
+     buffer_puts(b,"ZNot allowed to perform deliveries as root.\n"); return;
    case QLX_USAGE:
-     substdio_puts(ss,"ZInternal qmail-lspawn bug.\n"); return;
+     buffer_puts(b,"ZInternal qmail-lspawn bug.\n"); return;
    case QLX_NFS:
-     substdio_puts(ss,"ZNFS failure in qmail-local.\n"); return;
+     buffer_puts(b,"ZNFS failure in qmail-local.\n"); return;
    case QLX_EXECHARD:
-     substdio_puts(ss,"DUnable to run qmail-local.\n"); return;
+     buffer_puts(b,"DUnable to run qmail-local.\n"); return;
    case QLX_EXECSOFT:
-     substdio_puts(ss,"ZUnable to run qmail-local.\n"); return;
+     buffer_puts(b,"ZUnable to run qmail-local.\n"); return;
    case QLX_EXECPW:
-     substdio_puts(ss,"ZUnable to run qmail-getpw.\n"); return;
+     buffer_puts(b,"ZUnable to run qmail-getpw.\n"); return;
    case 111: case 71: case 74: case 75:
-     substdio_put(ss,"Z",1); break;
+     buffer_put(b,"Z",1); break;
    case 0:
-     substdio_put(ss,"K",1); break;
+     buffer_put(b,"K",1); break;
    case 100:
    default:
-     substdio_put(ss,"D",1); break;
+     buffer_put(b,"D",1); break;
   }
 
  for (i = 0;i < len;++i) if (!s[i]) break;
- substdio_put(ss,s,i);
+ buffer_put(b,s,i);
 }
 
-stralloc lower = {0};
-stralloc nughde = {0};
-stralloc wildchars = {0};
+stralloc lower = STRALLOC_ZERO;
+stralloc nughde = STRALLOC_ZERO;
+stralloc wildchars = STRALLOC_ZERO;
 
-void nughde_get(local)
-char *local;
+void nughde_get(char *local)
 {
  char *(args[3]);
  int pi[2];
@@ -98,6 +106,7 @@ char *local;
  int r;
  int fd;
  int flagwild;
+ cdb db = CDB_ZERO;
 
  if (!stralloc_copys(&lower,"!")) _exit(QLX_NOMEM);
  if (!stralloc_cats(&lower,local)) _exit(QLX_NOMEM);
@@ -108,19 +117,21 @@ char *local;
 
  fd = open_read("users/cdb");
  if (fd == -1)
-   if (errno != error_noent)
+   if (errno != ENOENT)
      _exit(QLX_CDB);
 
  if (fd != -1)
   {
-   uint32 dlen;
    unsigned int i;
+   cdb_data data;
+   
+   r = cdb_init_fromfd(&db, fd);
+   
+   if (r == 0) _exit(errno == ENOMEM ? QLX_NOMEM : QLX_CDB);
 
-   r = cdb_seek(fd,"",0,&dlen);
+   r = cdb_find(&db, &data, "", 0);
    if (r != 1) _exit(QLX_CDB);
-   if (!stralloc_ready(&wildchars,(unsigned int) dlen)) _exit(QLX_NOMEM);
-   wildchars.len = dlen;
-   if (cdb_bread(fd,wildchars.s,wildchars.len) == -1) _exit(QLX_CDB);
+   if (stralloc_catb(&wildchars,data.s,data.len) == 0) _exit(QLX_NOMEM);
 
    i = lower.len;
    flagwild = 0;
@@ -130,13 +141,11 @@ char *local;
      /* i > 0 */
      if (!flagwild || (i == 1) || (byte_chr(wildchars.s,wildchars.len,lower.s[i - 1]) < wildchars.len))
       {
-       r = cdb_seek(fd,lower.s,i,&dlen);
-       if (r == -1) _exit(QLX_CDB);
+       r = cdb_find(&db, &data, lower.s, i);
+       if (r == 0) _exit(QLX_CDB);
        if (r == 1)
         {
-         if (!stralloc_ready(&nughde,(unsigned int) dlen)) _exit(QLX_NOMEM);
-         nughde.len = dlen;
-         if (cdb_bread(fd,nughde.s,nughde.len) == -1) _exit(QLX_CDB);
+         if (stralloc_catb(&nughde, data.s, data.len) == 0) _exit(QLX_NOMEM);
          if (flagwild)
 	   if (!stralloc_cats(&nughde,local + i - 1)) _exit(QLX_NOMEM);
          if (!stralloc_0(&nughde)) _exit(QLX_NOMEM);
@@ -149,6 +158,7 @@ char *local;
     }
    while (i);
 
+   cdb_free(&db);
    close(fd);
   }
 
@@ -172,16 +182,14 @@ char *local;
 
  if (slurpclose(pi[0],&nughde,128) == -1) _exit(QLX_SYS);
 
- if (wait_pid(&gpwstat,gpwpid) != -1)
+ if (wait_pid(gpwpid,&gpwstat) != -1)
   {
    if (wait_crashed(gpwstat)) _exit(QLX_SYS);
    if (wait_exitcode(gpwstat) != 0) _exit(wait_exitcode(gpwstat));
   }
 }
 
-int spawn(fdmess,fdout,s,r,at)
-int fdmess; int fdout;
-char *s; char *r; int at;
+int spawn(int fdmess, int fdout, char *s, char *r, int at)
 {
  int f;
 
@@ -210,11 +218,11 @@ char *s; char *r; int at;
    args[2] = x;
    n = byte_chr(x,xlen,0); if (n++ == xlen) _exit(QLX_USAGE); x += n; xlen -= n;
 
-   scan_ulong(x,&u);
+   ulong_scan(x,&u);
    uid = u;
    n = byte_chr(x,xlen,0); if (n++ == xlen) _exit(QLX_USAGE); x += n; xlen -= n;
 
-   scan_ulong(x,&u);
+   ulong_scan(x,&u);
    gid = u;
    n = byte_chr(x,xlen,0); if (n++ == xlen) _exit(QLX_USAGE); x += n; xlen -= n;
 
