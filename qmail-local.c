@@ -1,47 +1,72 @@
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <stdlib.h>
+#include <signal.h>
+
+#include <skalibs/sig.h>
+#include <skalibs/env.h>
+#include <skalibs/strerr.h>
+#include <skalibs/buffer.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/stralloc.h>
+#include <skalibs/sgetopt.h>
+#include <skalibs/types.h>
+#include <skalibs/djbunix.h>
+#include <skalibs/error.h>
+#include <skalibs/exec.h>
+
+/*
 #include "readwrite.h"
 #include "sig.h"
 #include "env.h"
 #include "byte.h"
-#include "datetime.h"
 #include "exit.h"
 #include "fork.h"
 #include "open.h"
-#include "wait.h"
-#include "lock.h"
 #include "seek.h"
-#include "substdio.h"
-#include "getln.h"
 #include "strerr.h"
 #include "subfd.h"
 #include "sgetopt.h"
 #include "alloc.h"
 #include "error.h"
 #include "stralloc.h"
-#include "fmt.h"
 #include "str.h"
-#include "now.h"
 #include "case.h"
+*/
+
+#include "substdio.h"
+#include "datetime.h"
+#include "getln.h"
+#include "fmt.h"
+#include "now.h"
 #include "quote.h"
 #include "qmail.h"
-#include "slurpclose.h"
 #include "myctime.h"
 #include "gfrom.h"
 #include "auto_patrn.h"
+#include "wait.h"
+#include "slurpclose.h"
+#include "noreturn.h"
+#include "lock.h"
 
-void _noreturn_ usage() { strerr_die1x(100,"qmail-local: usage: qmail-local [ -nN ] user homedir local dash ext domain sender aliasempty"); }
+#define USAGE "qmail-local [ -nN ] user homedir local dash ext domain sender aliasempty"
 
-void _noreturn_ temp_nomem() { strerr_die1x(111,"Out of memory. (#4.3.0)"); }
-void _noreturn_ temp_rewind() { strerr_die1x(111,"Unable to rewind message. (#4.3.0)"); }
-void _noreturn_ temp_childcrashed() { strerr_die1x(111,"Aack, child crashed. (#4.3.0)"); }
-void _noreturn_ temp_fork() { strerr_die3x(111,"Unable to fork: ",error_str(errno),". (#4.3.0)"); }
-void _noreturn_ temp_read() { strerr_die3x(111,"Unable to read message: ",error_str(errno),". (#4.3.0)"); }
+
+void _noreturn_ usage() { strerr_dieusage (100, USAGE); }
+
+void _noreturn_ temp_nomem() { strerr_dief1x(111,"Out of memory. (#4.3.0)"); }
+void _noreturn_ temp_rewind() { strerr_dief1x(111,"Unable to rewind message. (#4.3.0)"); }
+void _noreturn_ temp_childcrashed() { strerr_dief1x(111,"Aack, child crashed. (#4.3.0)"); }
+void _noreturn_ temp_fork() { strerr_dief3x(111,"Unable to fork: ",strerror(errno),". (#4.3.0)"); }
+void _noreturn_ temp_read() { strerr_dief3x(111,"Unable to read message: ",strerror(errno),". (#4.3.0)"); }
 void _noreturn_ temp_slowlock()
-{ strerr_die1x(111,"File has been locked for 30 seconds straight. (#4.3.0)"); }
+{ strerr_dief1x(111,"File has been locked for 30 seconds straight. (#4.3.0)"); }
 void _noreturn_ temp_qmail(char *fn)
-{ strerr_die5x(111,"Unable to open ",fn,": ",error_str(errno),". (#4.3.0)"); }
+{ strerr_dief5x(111,"Unable to open ",fn,": ",strerror(errno),". (#4.3.0)"); }
 
 int flagdoit;
 int flag99;
@@ -55,29 +80,28 @@ char *host;
 char *sender;
 char *aliasempty;
 
-stralloc safeext = {0};
-stralloc ufline = {0};
-stralloc rpline = {0};
-stralloc envrecip = {0};
-stralloc dtline = {0};
-stralloc qme = {0};
-stralloc ueo = {0};
-stralloc cmds = {0};
-stralloc messline = {0};
-stralloc foo = {0};
+stralloc safeext = STRALLOC_ZERO;
+stralloc ufline = STRALLOC_ZERO;
+stralloc rpline = STRALLOC_ZERO;
+stralloc envrecip = STRALLOC_ZERO;
+stralloc dtline = STRALLOC_ZERO;
+stralloc qme = STRALLOC_ZERO;
+stralloc ueo = STRALLOC_ZERO;
+stralloc cmds = STRALLOC_ZERO;
+stralloc messline = STRALLOC_ZERO;
+stralloc foo = STRALLOC_ZERO;
 
 char buf[1024];
 char outbuf[1024];
 
 /* child process */
 
-char fntmptph[80 + FMT_ULONG * 2];
-char fnnewtph[80 + FMT_ULONG * 2];
+char fntmptph[80 + ULONG_FMT * 2];
+char fnnewtph[80 + ULONG_FMT * 2];
 void tryunlinktmp() { unlink(fntmptph); }
 void sigalrm() { tryunlinktmp(); _exit(3); }
 
-void maildir_child(dir)
-char *dir;
+void maildir_child(char *dir)
 {
  unsigned long pid;
  unsigned long time;
@@ -85,10 +109,10 @@ char *dir;
  char *s;
  int loop;
  int fd;
- substdio ss;
- substdio ssout;
+ buffer b;
+ buffer bout;
 
- sig_alarmcatch(sigalrm);
+ sig_catch(SIGALRM, sigalrm);
  if (chdir(dir) == -1) { if (error_temp(errno)) _exit(1); _exit(2); }
  pid = getpid();
  myhost[0] = 0;
@@ -98,14 +122,14 @@ char *dir;
    time = now();
    s = fntmptph;
    s += fmt_str(s,"tmp/");
-   s += fmt_ulong(s,time); *s++ = '.';
-   s += fmt_ulong(s,pid); *s++ = '.';
+   s += ulong_fmt(s,time); *s++ = '.';
+   s += ulong_fmt(s,pid); *s++ = '.';
    s += fmt_strn(s,myhost,sizeof(myhost)); *s++ = 0;
    alarm(86400);
    fd = open_excl(fntmptph);
    if (fd >= 0)
      break;
-   if (errno == error_exist) {
+   if (errno == EEXIST) {
      /* really should never get to this point */
      if (loop == 2) _exit(1);
      sleep(2);
@@ -116,18 +140,18 @@ char *dir;
  str_copy(fnnewtph,fntmptph);
  byte_copy(fnnewtph,3,"new");
 
- substdio_fdbuf(&ss,read,0,buf,sizeof(buf));
- substdio_fdbuf(&ssout,write,fd,outbuf,sizeof(outbuf));
- if (substdio_put(&ssout,rpline.s,rpline.len) == -1) goto fail;
- if (substdio_put(&ssout,dtline.s,dtline.len) == -1) goto fail;
+ buffer_init(&b, buffer_read, 0, buf, sizeof(buf));
+ buffer_init(&bout, buffer_write, fd, outbuf, sizeof(outbuf));
+ if (buffer_put(&bout,rpline.s,rpline.len) == -1) goto fail;
+ if (buffer_put(&bout,dtline.s,dtline.len) == -1) goto fail;
 
- switch(substdio_copy(&ssout,&ss))
+ switch(buffer_copy(&bout,&b))
   {
    case -2: tryunlinktmp(); _exit(4);
    case -3: goto fail;
   }
 
- if (substdio_flush(&ssout) == -1) goto fail;
+ if (buffer_flush(&bout) == -1) goto fail;
  if (fsync(fd) == -1) goto fail;
  if (close(fd) == -1) goto fail; /* NFS dorks */
 
@@ -140,13 +164,12 @@ char *dir;
 
 /* end child process */
 
-void maildir(fn)
-char *fn;
+void maildir(char *fn)
 {
  int child;
  int wstat;
 
- if (seek_begin(0) == -1) temp_rewind();
+ if (lseek(0, 0, SEEK_SET) == -1) temp_rewind();
 
  switch(child = fork())
   {
@@ -157,88 +180,86 @@ char *fn;
      _exit(111);
   }
 
- wait_pid(&wstat,child);
+ wait_pid(child,&wstat);
  if (wait_crashed(wstat))
    temp_childcrashed();
  switch(wait_exitcode(wstat))
   {
    case 0: break;
-   case 2: strerr_die1x(111,"Unable to chdir to maildir. (#4.2.1)");
-   case 3: strerr_die1x(111,"Timeout on maildir delivery. (#4.3.0)");
-   case 4: strerr_die1x(111,"Unable to read message. (#4.3.0)");
-   default: strerr_die1x(111,"Temporary error on maildir delivery. (#4.3.0)");
+   case 2: strerr_dief1x(111,"unable to chdir to maildir. (#4.2.1)");
+   case 3: strerr_dief1x(111,"timeout on maildir delivery. (#4.3.0)");
+   case 4: strerr_dief1x(111,"unable to read message. (#4.3.0)");
+   default: strerr_dief1x(111,"temporary error on maildir delivery. (#4.3.0)");
   }
 }
 
-void mailfile(fn)
-char *fn;
+void mailfile(char *fn)
 {
  int fd;
- substdio ss;
- substdio ssout;
+ buffer b;
+ buffer bout;
  int match;
- seek_pos pos;
+ off_t pos;
  int flaglocked;
 
- if (seek_begin(0) == -1) temp_rewind();
+ if (lseek(0, 0, SEEK_SET) == -1) temp_rewind();
 
  fd = open_append(fn);
  if (fd == -1)
-   strerr_die5x(111,"Unable to open ",fn,": ",error_str(errno),". (#4.2.1)");
+   strerr_die(111,"Unable to open ",fn,": ",strerror(errno),". (#4.2.1)");
 
- sig_alarmcatch(temp_slowlock);
+ sig_catch(SIGALRM, temp_slowlock);
  alarm(30);
  flaglocked = (lock_ex(fd) != -1);
  alarm(0);
- sig_alarmdefault();
+ sig_restore(SIGALRM);
 
- seek_end(fd);
- pos = seek_cur(fd);
+ lseek(fd, 0, SEEK_END);
+ pos = lseek(fd, 0, SEEK_CUR);
 
- substdio_fdbuf(&ss,read,0,buf,sizeof(buf));
- substdio_fdbuf(&ssout,write,fd,outbuf,sizeof(outbuf));
- if (substdio_put(&ssout,ufline.s,ufline.len)) goto writeerrs;
- if (substdio_put(&ssout,rpline.s,rpline.len)) goto writeerrs;
- if (substdio_put(&ssout,dtline.s,dtline.len)) goto writeerrs;
+ buffer_init(&b, buffer_read, 0, buf, sizeof(buf));
+ buffer_init(&bout, buffer_write,fd, outbuf, sizeof(outbuf));
+ if (buffer_put(&bout,ufline.s,ufline.len)) goto writeerrs;
+ if (buffer_put(&bout,rpline.s,rpline.len)) goto writeerrs;
+ if (buffer_put(&bout,dtline.s,dtline.len)) goto writeerrs;
  for (;;)
   {
-   if (getln(&ss,&messline,&match,'\n') != 0) 
+   if (getln(&b,&messline,&match,'\n') != 0)
     {
-     strerr_warn3("Unable to read message: ",error_str(errno),". (#4.3.0)",0);
-     if (flaglocked) seek_trunc(fd,pos); close(fd);
+     strerr_warnwu3x("read message: ",strerror(errno),". (#4.3.0)");
+     if (flaglocked) ftruncate(fd,pos); close(fd);
      _exit(111);
     }
    if (!match && !messline.len) break;
    if (gfrom(messline.s,messline.len))
-     if (substdio_bput(&ssout,">",1)) goto writeerrs;
-   if (substdio_bput(&ssout,messline.s,messline.len)) goto writeerrs;
+     if (buffer_put(&bout,">",1)) goto writeerrs;
+   if (buffer_put(&bout,messline.s,messline.len)) goto writeerrs;
    if (!match)
     {
-     if (substdio_bputs(&ssout,"\n")) goto writeerrs;
+     if (buffer_puts(&bout,"\n")) goto writeerrs;
      break;
     }
   }
- if (substdio_bputs(&ssout,"\n")) goto writeerrs;
- if (substdio_flush(&ssout)) goto writeerrs;
+ if (buffer_puts(&bout,"\n")) goto writeerrs;
+ if (buffer_flush(&bout)) goto writeerrs;
  if (fsync(fd) == -1) goto writeerrs;
  close(fd);
  return;
 
  writeerrs:
- strerr_warn5("Unable to write ",fn,": ",error_str(errno),". (#4.3.0)",0);
- if (flaglocked) seek_trunc(fd,pos);
+ strerr_warnwu5x("write ",fn,": ",strerror(errno),". (#4.3.0)");
+ if (flaglocked) ftruncate(fd,pos);
  close(fd);
  _exit(111);
 }
 
-void mailprogram(prog)
-char *prog;
+void mailprogram(char *prog, stralloc *env_modifs)
 {
  int child;
  char *(args[4]);
  int wstat;
 
- if (seek_begin(0) == -1) temp_rewind();
+ if (lseek(0, 0, SEEK_SET) == -1) temp_rewind();
 
  switch(child = fork())
   {
@@ -246,12 +267,12 @@ char *prog;
      temp_fork();
    case 0:
      args[0] = "/bin/sh"; args[1] = "-c"; args[2] = prog; args[3] = 0;
-     sig_pipedefault();
-     execv(*args,args);
-     strerr_die3x(111,"Unable to run /bin/sh: ",error_str(errno),". (#4.3.0)");
+     sig_restore(SIGPIPE);
+     mexec_m((char const *const *)args, env_modifs->s, env_modifs->len);
+     strerr_diefu3x(111,"run /bin/sh: ",strerror(errno),". (#4.3.0)");
   }
 
- wait_pid(&wstat,child);
+ wait_pid(child, &wstat);
  if (wait_crashed(wstat))
    temp_childcrashed();
  switch(wait_exitcode(wstat))
@@ -266,23 +287,22 @@ char *prog;
 
 unsigned long mailforward_qp = 0;
 
-void mailforward(recips)
-char **recips;
+void mailforward(char **recips)
 {
  struct qmail qqt;
  char *qqx;
- substdio ss;
+ buffer b;
  int match;
 
- if (seek_begin(0) == -1) temp_rewind();
- substdio_fdbuf(&ss,read,0,buf,sizeof(buf));
+ if (lseek(0, 0, SEEK_SET) == -1) temp_rewind();
+ buffer_init(&b,buffer_read,0,buf,sizeof(buf));
 
  if (qmail_open(&qqt) == -1) temp_fork();
  mailforward_qp = qmail_qp(&qqt);
  qmail_put(&qqt,dtline.s,dtline.len);
  do
   {
-   if (getln(&ss,&messline,&match,'\n') != 0) { qmail_fail(&qqt); break; }
+   if (getln(&b,&messline,&match,'\n') != 0) { qmail_fail(&qqt); break; }
    qmail_put(&qqt,messline.s,messline.len);
   }
  while (match);
@@ -290,46 +310,45 @@ char **recips;
  while (*recips) qmail_to(&qqt,*recips++);
  qqx = qmail_close(&qqt);
  if (!*qqx) return;
- strerr_die3x(*qqx == 'D' ? 100 : 111,"Unable to forward message: ",qqx + 1,".");
+ strerr_diefu3x(*qqx == 'D' ? 100 : 111,"forward message: ",qqx + 1,".");
 }
 
-void bouncexf()
+void bouncexf(void)
 {
  int match;
- substdio ss;
+ buffer b;
 
- if (seek_begin(0) == -1) temp_rewind();
- substdio_fdbuf(&ss,read,0,buf,sizeof(buf));
+ if (lseek(0, 0, SEEK_SET) == -1) temp_rewind();
+ buffer_init(&b,buffer_read,0,buf,sizeof(buf));
  for (;;)
   {
-   if (getln(&ss,&messline,&match,'\n') != 0) temp_read();
+   if (getln(&b,&messline,&match,'\n') != 0) temp_read();
    if (!match) break;
    if (messline.len <= 1)
      break;
    if (messline.len == dtline.len)
      if (!str_diffn(messline.s,dtline.s,dtline.len))
-       strerr_die1x(100,"This message is looping: it already has my Delivered-To line. (#5.4.6)");
+       strerr_dief1x(100,"this message is looping: it already has my Delivered-To line. (#5.4.6)");
   }
 }
 
-void checkhome()
+void checkhome(void)
 {
  struct stat st;
 
  if (stat(".",&st) == -1)
-   strerr_die3x(111,"Unable to stat home directory: ",error_str(errno),". (#4.3.0)");
+   strerr_diefu3x(111,"stat home directory: ",strerror(errno),". (#4.3.0)");
  if (st.st_mode & auto_patrn)
-   strerr_die1x(111,"Uh-oh: home directory is writable. (#4.7.0)");
+   strerr_dief1x(111,"uh-oh: home directory is writable. (#4.7.0)");
  if (st.st_mode & 01000) {
    if (flagdoit)
-     strerr_die1x(111,"Home directory is sticky: user is editing his .qmail file. (#4.2.1)");
+     strerr_dief1x(111,"home directory is sticky: user is editing his .qmail file. (#4.2.1)");
    else
-     strerr_warn1("Warning: home directory is sticky.",0);
+     strerr_warnw1x("home directory is sticky.");
  }
 }
 
-int qmeox(dashowner)
-char *dashowner;
+int qmeox(char *dashowner)
 {
  struct stat st;
 
@@ -346,9 +365,7 @@ char *dashowner;
  return 0;
 }
 
-int qmeexists(fd,cutable)
-int *fd;
-int *cutable;
+int qmeexists(int *fd, int *cutable)
 {
   struct stat st;
 
@@ -357,15 +374,15 @@ int *cutable;
   *fd = open_read(qme.s);
   if (*fd == -1) {
     if (error_temp(errno)) temp_qmail(qme.s);
-    if (errno == error_perm) temp_qmail(qme.s);
-    if (errno == error_acces) temp_qmail(qme.s);
+    if (errno == EPERM) temp_qmail(qme.s);
+    if (errno == EACCES) temp_qmail(qme.s);
     return 0;
   }
 
   if (fstat(*fd,&st) == -1) temp_qmail(qme.s);
   if ((st.st_mode & S_IFMT) == S_IFREG) {
     if (st.st_mode & auto_patrn)
-      strerr_die1x(111,"Uh-oh: .qmail file is writable. (#4.7.0)");
+      strerr_dief1x(111,"uh-oh: .qmail file is writable. (#4.7.0)");
     *cutable = !!(st.st_mode & 0100);
     return 1;
   }
@@ -381,9 +398,7 @@ int *cutable;
 /* "-/" "a-b-": "-/a-b-" "-/a-b-default" "-/a-default" "-/default" */
 /* "-/" "a-b-c": "-/a-b-c" "-/a-b-default" "-/a-default" "-/default" */
 
-void qmesearch(fd,cutable)
-int *fd;
-int *cutable;
+void qmesearch(int *fd, int *cutable, stralloc *env_modifs)
 {
   int i;
 
@@ -395,7 +410,7 @@ int *cutable;
       i = safeext.len - 7;
       if (byte_equal("default",7,safeext.s + i))
 	if (i <= str_len(ext)) /* paranoia */
-	  if (!env_put2("DEFAULT",ext + i)) temp_nomem();
+	  if (!env_addmodif(env_modifs,"DEFAULT",ext + i)) temp_nomem();
     }
     return;
   }
@@ -408,7 +423,7 @@ int *cutable;
       if (!stralloc_cats(&qme,"default")) temp_nomem();
       if (qmeexists(fd,cutable)) {
 	if (i <= str_len(ext)) /* paranoia */
-	  if (!env_put2("DEFAULT",ext + i)) temp_nomem();
+	  if (!env_addmodif(env_modifs,"DEFAULT",ext + i)) temp_nomem();
         return;
       }
     }
@@ -419,31 +434,31 @@ int *cutable;
 unsigned long count_file = 0;
 unsigned long count_forward = 0;
 unsigned long count_program = 0;
-char count_buf[FMT_ULONG];
+char count_buf[ULONG_FMT];
 
 void count_print()
 {
- substdio_puts(subfdoutsmall,"did ");
- substdio_put(subfdoutsmall,count_buf,fmt_ulong(count_buf,count_file));
- substdio_puts(subfdoutsmall,"+");
- substdio_put(subfdoutsmall,count_buf,fmt_ulong(count_buf,count_forward));
- substdio_puts(subfdoutsmall,"+");
- substdio_put(subfdoutsmall,count_buf,fmt_ulong(count_buf,count_program));
- substdio_puts(subfdoutsmall,"\n");
+ buffer_puts(buffer_1small,"did ");
+ buffer_put(buffer_1small,count_buf,ulong_fmt(count_buf,count_file));
+ buffer_puts(buffer_1small,"+");
+ buffer_put(buffer_1small, count_buf,ulong_fmt(count_buf,count_forward));
+ buffer_puts(buffer_1small,"+");
+ buffer_put(buffer_1small,count_buf,ulong_fmt(count_buf,count_program));
+ buffer_puts(buffer_1small,"\n");
  if (mailforward_qp)
   {
-   substdio_puts(subfdoutsmall,"qp ");
-   substdio_put(subfdoutsmall,count_buf,fmt_ulong(count_buf,mailforward_qp));
-   substdio_puts(subfdoutsmall,"\n");
+   buffer_puts(buffer_1small,"qp ");
+   buffer_put(buffer_1small,count_buf,ulong_fmt(count_buf,mailforward_qp));
+   buffer_puts(buffer_1small,"\n");
   }
- substdio_flush(subfdoutsmall);
+ buffer_flush(buffer_1small);
 }
 
 void sayit(char *type, char *cmd, unsigned int len)
 {
- substdio_puts(subfdoutsmall,type);
- substdio_put(subfdoutsmall,cmd,len);
- substdio_putsflush(subfdoutsmall,"\n");
+ buffer_puts(buffer_1small,type);
+ buffer_put(buffer_1small,cmd,len);
+ buffer_putsflush(buffer_1small,"\n");
 }
 
 int main(int argc, char **argv)
@@ -457,14 +472,16 @@ int main(int argc, char **argv)
  datetime_sec starttime;
  int flagforwardonly;
  char *x;
+ subgetopt l = SUBGETOPT_ZERO;
+ stralloc env_modifs = STRALLOC_ZERO;
 
  umask(077);
- sig_pipeignore();
-
+ sig_ignore(SIGPIPE);
+/*
  if (!env_init()) temp_nomem();
-
+*/
  flagdoit = 1;
- while ((opt = getopt(argc,argv,"nN")) != opteof)
+ while ((opt = subgetopt_r(argc,(char const *const *)argv,"nN",&l)) != -1)
    switch(opt)
     {
      case 'n': flagdoit = 0; break;
@@ -472,8 +489,8 @@ int main(int argc, char **argv)
      default:
        usage();
     }
- argc -= optind;
- argv += optind;
+ argc -= l.ind;
+ argv += l.ind;
 
  if (!(user = *argv++)) usage();
  if (!(homedir = *argv++)) usage();
@@ -487,13 +504,13 @@ int main(int argc, char **argv)
 
  if (homedir[0] != '/') usage();
  if (chdir(homedir) == -1)
-   strerr_die5x(111,"Unable to switch to ",homedir,": ",error_str(errno),". (#4.3.0)");
+   strerr_diefu5x(111,"switch to ",homedir,": ",strerror(errno),". (#4.3.0)");
  checkhome();
 
- if (!env_put2("HOST",host)) temp_nomem();
- if (!env_put2("HOME",homedir)) temp_nomem();
- if (!env_put2("USER",user)) temp_nomem();
- if (!env_put2("LOCAL",local)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"HOST",host)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"HOME",homedir)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"USER",user)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"LOCAL",local)) temp_nomem();
 
  if (!stralloc_copys(&envrecip,local)) temp_nomem();
  if (!stralloc_cats(&envrecip,"@")) temp_nomem();
@@ -501,7 +518,7 @@ int main(int argc, char **argv)
 
  if (!stralloc_copy(&foo,&envrecip)) temp_nomem();
  if (!stralloc_0(&foo)) temp_nomem();
- if (!env_put2("RECIPIENT",foo.s)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"RECIPIENT",foo.s)) temp_nomem();
 
  if (!stralloc_copys(&dtline,"Delivered-To: ")) temp_nomem();
  if (!stralloc_cat(&dtline,&envrecip)) temp_nomem();
@@ -510,12 +527,12 @@ int main(int argc, char **argv)
 
  if (!stralloc_copy(&foo,&dtline)) temp_nomem();
  if (!stralloc_0(&foo)) temp_nomem();
- if (!env_put2("DTLINE",foo.s)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"DTLINE",foo.s)) temp_nomem();
 
  if (flagdoit)
    bouncexf();
 
- if (!env_put2("SENDER",sender)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"SENDER",sender)) temp_nomem();
 
  if (!quote2(&foo,sender)) temp_nomem();
  if (!stralloc_copys(&rpline,"Return-Path: <")) temp_nomem();
@@ -525,7 +542,7 @@ int main(int argc, char **argv)
 
  if (!stralloc_copy(&foo,&rpline)) temp_nomem();
  if (!stralloc_0(&foo)) temp_nomem();
- if (!env_put2("RPLINE",foo.s)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"RPLINE",foo.s)) temp_nomem();
 
  if (!stralloc_copys(&ufline,"From ")) temp_nomem();
  if (*sender)
@@ -551,16 +568,16 @@ int main(int argc, char **argv)
 
  if (!stralloc_copy(&foo,&ufline)) temp_nomem();
  if (!stralloc_0(&foo)) temp_nomem();
- if (!env_put2("UFLINE",foo.s)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"UFLINE",foo.s)) temp_nomem();
 
  x = ext;
- if (!env_put2("EXT",x)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"EXT",x)) temp_nomem();
  x += str_chr(x,'-'); if (*x) ++x;
- if (!env_put2("EXT2",x)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"EXT2",x)) temp_nomem();
  x += str_chr(x,'-'); if (*x) ++x;
- if (!env_put2("EXT3",x)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"EXT3",x)) temp_nomem();
  x += str_chr(x,'-'); if (*x) ++x;
- if (!env_put2("EXT4",x)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"EXT4",x)) temp_nomem();
 
  if (!stralloc_copys(&safeext,ext)) temp_nomem();
  case_lowerb(safeext.s,safeext.len);
@@ -572,21 +589,21 @@ int main(int argc, char **argv)
  i = byte_rchr(host,i,'.');
  if (!stralloc_copyb(&foo,host,i)) temp_nomem();
  if (!stralloc_0(&foo)) temp_nomem();
- if (!env_put2("HOST2",foo.s)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"HOST2",foo.s)) temp_nomem();
  i = byte_rchr(host,i,'.');
  if (!stralloc_copyb(&foo,host,i)) temp_nomem();
  if (!stralloc_0(&foo)) temp_nomem();
- if (!env_put2("HOST3",foo.s)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"HOST3",foo.s)) temp_nomem();
  i = byte_rchr(host,i,'.');
  if (!stralloc_copyb(&foo,host,i)) temp_nomem();
  if (!stralloc_0(&foo)) temp_nomem();
- if (!env_put2("HOST4",foo.s)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"HOST4",foo.s)) temp_nomem();
 
  flagforwardonly = 0;
- qmesearch(&fd,&flagforwardonly);
+ qmesearch(&fd,&flagforwardonly,&env_modifs);
  if (fd == -1)
    if (*dash)
-     strerr_die1x(100,"Sorry, no mailbox here by that name. (#5.1.1)");
+     strerr_dief1x(100,"sorry, no mailbox here by that name. (#5.1.1)");
 
  if (!stralloc_copys(&ueo,sender)) temp_nomem();
  if (str_diff(sender,""))
@@ -608,7 +625,7 @@ int main(int argc, char **argv)
 	}
       }
  if (!stralloc_0(&ueo)) temp_nomem();
- if (!env_put2("NEWSENDER",ueo.s)) temp_nomem();
+ if (!env_addmodif(&env_modifs,"NEWSENDER",ueo.s)) temp_nomem();
 
  if (!stralloc_ready(&cmds,0)) temp_nomem();
  cmds.len = 0;
@@ -651,13 +668,13 @@ int main(int argc, char **argv)
       {
        case 0: /* k == i */
 	 if (i) break;
-         strerr_die1x(111,"Uh-oh: first line of .qmail file is blank. (#4.2.1)");
+         strerr_dief1x(111,"uh-oh: first line of .qmail file is blank. (#4.2.1)");
        case '#':
          break;
        case '.':
        case '/':
 	 ++count_file;
-	 if (flagforwardonly) strerr_die1x(111,"Uh-oh: .qmail has file delivery but has x bit set. (#4.7.0)");
+	 if (flagforwardonly) strerr_dief1x(111,"uh-oh: .qmail has file delivery but has x bit set. (#4.7.0)");
 	 if (cmds.s[k - 1] == '/')
            if (flagdoit) maildir(cmds.s + i);
            else sayit("maildir ",cmds.s + i,k - i);
@@ -667,8 +684,8 @@ int main(int argc, char **argv)
          break;
        case '|':
 	 ++count_program;
-	 if (flagforwardonly) strerr_die1x(111,"Uh-oh: .qmail has prog delivery but has x bit set. (#4.7.0)");
-         if (flagdoit) mailprogram(cmds.s + i + 1);
+	 if (flagforwardonly) strerr_dief1x(111,"uh-oh: .qmail has prog delivery but has x bit set. (#4.7.0)");
+         if (flagdoit) mailprogram(cmds.s + i + 1, &env_modifs);
          else sayit("program ",cmds.s + i + 1,k - i - 1);
          break;
        case '+':

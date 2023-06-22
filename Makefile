@@ -1068,24 +1068,19 @@ qmail-limits.9 conf-qmail conf-break conf-spawn
 
 qmail-local: \
 load qmail-local.o qmail.o quote.o gfrom.o myctime.o \
-slurpclose.o case.a getln.a getopt.a sig.a open.a lock.a fd.a \
-wait.a env.a stralloc.a strerr.a substdio.a error.a str.a \
-fs.a datetime.a auto_qmail.o auto_patrn.o socket.lib
+slurpclose.o getln.a lock.a fs.a substdio_copy.a datetime.a \
+auto_qmail.o auto_patrn.o socket.lib
 	./load qmail-local qmail.o quote.o gfrom.o myctime.o \
-	slurpclose.o case.a getln.a getopt.a sig.a open.a \
-	lock.a fd.a wait.a env.a stralloc.a strerr.a \
-	substdio.a error.a str.a fs.a datetime.a auto_qmail.o \
-	auto_patrn.o  `cat socket.lib`
+	slurpclose.o getln.a lock.a fs.a substdio_copy.a datetime.a \
+	auto_qmail.o auto_patrn.o  `cat socket.lib` -lskarnet
 
 qmail-local.0: \
 qmail-local.8
 
 qmail-local.o: \
-compile qmail-local.c readwrite.h sig.h env.h byte.h exit.h fork.h \
-open.h wait.h lock.h seek.h substdio.h getln.h strerr.h subfd.h \
-substdio.h sgetopt.h subgetopt.h alloc.h error.h stralloc.h \
-gen_alloc.h fmt.h str.h now.h datetime.h case.h quote.h qmail.h \
-substdio.h slurpclose.h myctime.h gfrom.h auto_patrn.h
+compile qmail-local.c lock.h getln.h fmt.h now.h datetime.h \
+substdio.h quote.h qmail.h slurpclose.h myctime.h gfrom.h \
+auto_patrn.h
 	./compile qmail-local.c
 
 qmail-log.0: \
