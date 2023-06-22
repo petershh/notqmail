@@ -1518,8 +1518,7 @@ compile quote.c oflops.h
 	./compile quote.c
 
 rcpthosts.o: \
-compile rcpthosts.c cdb.h uint32.h byte.h open.h error.h control.h \
-constmap.h stralloc.h gen_alloc.h rcpthosts.h case.h
+compile rcpthosts.c control.h constmap.h rcpthosts.h 
 	./compile rcpthosts.c
 
 readsubdir.o: \
