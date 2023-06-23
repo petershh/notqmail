@@ -1304,20 +1304,16 @@ error.h
 	./compile qmail-remote.c
 
 qmail-rspawn: \
-load qmail-rspawn.o spawn.o tcpto_clean.o coe.o sig.a open.a \
-lock.a wait.a fd.a stralloc.a substdio.a error.a env.a str.a \
-auto_qmail.o auto_spawn.o ids.a
-	./load qmail-rspawn spawn.o tcpto_clean.o coe.o \
-	sig.a open.a lock.a wait.a fd.a stralloc.a \
-	auto_qmail.o ids.a substdio.a error.a env.a str.a \
-	auto_spawn.o
+load qmail-rspawn.o spawn.o tcpto_clean.o \
+lock.a auto_qmail.o auto_spawn.o ids.a
+	./load qmail-rspawn spawn.o tcpto_clean.o \
+	lock.a auto_qmail.o ids.a auto_spawn.o -lskarnet
 
 qmail-rspawn.0: \
 qmail-rspawn.8
 
 qmail-rspawn.o: \
-compile qmail-rspawn.c fd.h wait.h substdio.h exit.h fork.h error.h env.h \
-tcpto.h spawn.h
+compile qmail-rspawn.c wait.h tcpto.h spawn.h
 	./compile qmail-rspawn.c
 
 qmail-send: \
