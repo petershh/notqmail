@@ -1518,8 +1518,7 @@ compile rcpthosts.c control.h constmap.h rcpthosts.h
 	./compile rcpthosts.c
 
 readsubdir.o: \
-compile readsubdir.c readsubdir.h direntry.h fmt.h scan.h str.h \
-auto_split.h
+compile readsubdir.c readsubdir.h fmt.h auto_split.h
 	./compile readsubdir.c
 
 received.o: \
