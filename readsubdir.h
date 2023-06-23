@@ -1,6 +1,8 @@
 #ifndef READSUBDIR_H
 #define READSUBDIR_H
 
+#include <dirent.h>
+
 typedef struct readsubdir
  {
   DIR *dir;
