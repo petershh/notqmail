@@ -1,20 +1,28 @@
-#include "tcpto.h"
+#include <unistd.h>
 
+#include <skalibs/djbunix.h>
+#include <skalibs/ip46.h>
+#include <skalibs/bytestr.h>
+
+/*
 #include "open.h"
-#include "lock.h"
 #include "seek.h"
-#include "now.h"
 #include "ip.h"
 #include "byte.h"
-#include "datetime.h"
 #include "readwrite.h"
+*/
+
+#include "tcpto.h"
+#include "lock.h"
+#include "now.h"
+#include "datetime.h"
 
 char tcpto_buf[1024];
 
 static int flagwasthere;
 static int fdlock;
 
-static int getbuf()
+static int getbuf(void)
 {
  int r;
  int fd;
@@ -32,42 +40,42 @@ static int getbuf()
  return r;
 }
 
-int tcpto(ip) struct ip_address *ip;
+int tcpto(ip46 *ip)
 {
- int n;
- int i;
- char *record;
+  int n;
+  int i;
+  char *record;
 
- flagwasthere = 0;
+  flagwasthere = 0;
 
- n = getbuf();
- if (!n) return 0;
- close(fdlock);
+  n = getbuf();
+  if (!n) return 0;
+  close(fdlock);
 
- record = tcpto_buf;
- for (i = 0;i < n;++i)
+  record = tcpto_buf;
+  for (i = 0;i < n;++i)
   {
-   if (byte_equal(ip->d,4,record))
+    if (byte_equal(ip->ip,4,record)) /* XXX: wouldn't work with ipv6 addrs*/
     {
-     flagwasthere = 1;
-     if (record[4] >= 2)
+      flagwasthere = 1;
+      if (record[4] >= 2)
       {
-       datetime_sec when = (unsigned long) (unsigned char) record[11];
-       when = (when << 8) + (unsigned long) (unsigned char) record[10];
-       when = (when << 8) + (unsigned long) (unsigned char) record[9];
-       when = (when << 8) + (unsigned long) (unsigned char) record[8];
+        datetime_sec when = (unsigned long) (unsigned char) record[11];
+        when = (when << 8) + (unsigned long) (unsigned char) record[10];
+        when = (when << 8) + (unsigned long) (unsigned char) record[9];
+        when = (when << 8) + (unsigned long) (unsigned char) record[8];
 
-       if (now() - when < ((60 + (getpid() & 31)) << 6))
-	 return 1;
+        if (now() - when < ((60 + (getpid() & 31)) << 6))
+          return 1;
       }
-     return 0;
+      return 0;
     }
-   record += 16;
+    record += 16;
   }
- return 0;
+  return 0;
 }
 
-void tcpto_err(ip,flagerr) struct ip_address *ip; int flagerr;
+void tcpto_err(ip46 *ip, int flagerr)
 {
  int n;
  int i;
@@ -85,7 +93,7 @@ void tcpto_err(ip,flagerr) struct ip_address *ip; int flagerr;
  record = tcpto_buf;
  for (i = 0;i < n;++i)
   {
-   if (byte_equal(ip->d,4,record))
+   if (byte_equal(ip->ip,4,record)) /* XXX: wouldn't work with ipv6 addrs*/
     {
      if (!flagerr)
        record[4] = 0;
@@ -105,7 +113,7 @@ void tcpto_err(ip,flagerr) struct ip_address *ip; int flagerr;
        record[10] = when; when >>= 8;
        record[11] = when;
       }
-     if (seek_set(fdlock,i << 4) == 0)
+     if (lseek(fdlock,i << 4, SEEK_SET) != -1)
        if (write(fdlock,record,16) < 16)
          ; /*XXX*/
      close(fdlock);
@@ -148,14 +156,14 @@ void tcpto_err(ip,flagerr) struct ip_address *ip; int flagerr;
  if (i >= 0)
   {
    record = tcpto_buf + (i << 4);
-   byte_copy(record,4,ip->d);
+   byte_copy(record,4,ip->ip); /* XXX: wouldn't work with ipv6 addrs*/
    when = now();
    record[8] = when; when >>= 8;
    record[9] = when; when >>= 8;
    record[10] = when; when >>= 8;
    record[11] = when;
    record[4] = 1;
-   if (seek_set(fdlock,i << 4) == 0)
+   if (lseek(fdlock,i << 4, SEEK_SET) != -1)
      if (write(fdlock,record,16) < 16)
        ; /*XXX*/
   }

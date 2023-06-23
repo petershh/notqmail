@@ -1443,7 +1443,7 @@ qmail-tcpto.0: \
 qmail-tcpto.8
 
 qmail-tcpto.o: \
-compile qmail-tcpto.c substdio.h subfd.h substdio.h auto_qmail.h byte.h \
+compile qmail-tcpto.c subfd.h substdio.h auto_qmail.h byte.h \
 fmt.h ip.h lock.h error.h exit.h datetime.h now.h datetime.h open.h
 	./compile qmail-tcpto.c
 
@@ -1795,12 +1795,11 @@ tcp-environ.0: \
 tcp-environ.5
 
 tcpto.o: \
-compile tcpto.c tcpto.h open.h lock.h seek.h now.h datetime.h ip.h \
-byte.h datetime.h readwrite.h
+compile tcpto.c tcpto.h lock.h now.h datetime.h datetime.h
 	./compile tcpto.c
 
 tcpto_clean.o: \
-compile tcpto_clean.c tcpto.h open.h substdio.h readwrite.h
+compile tcpto_clean.c tcpto.h
 	./compile tcpto_clean.c
 
 test: it
