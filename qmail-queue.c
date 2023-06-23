@@ -1,13 +1,26 @@
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
+#include <signal.h>
+
+#include <skalibs/sig.h>
+#include <skalibs/types.h>
+#include <skalibs/alloc.h>
+#include <skalibs/buffer.h>
+#include <skalibs/djbunix.h>
+
+/*
 #include "readwrite.h"
 #include "sig.h"
 #include "exit.h"
 #include "open.h"
 #include "seek.h"
-#include "fmt.h"
 #include "alloc.h"
 #include "substdio.h"
+*/
+
+#include "substdio.h"
+#include "fmt.h"
 #include "datetime.h"
 #include "now.h"
 #include "triggerpull.h"
@@ -24,9 +37,9 @@
 #define ADDR 1003
 
 char inbuf[2048];
-struct substdio ssin;
+buffer bin;
 char outbuf[256];
-struct substdio ssout;
+buffer bout;
 
 datetime_sec starttime;
 struct datetime dt;
@@ -47,16 +60,16 @@ uid_t auto_uida;
 uid_t auto_uidd;
 uid_t auto_uids;
 
-void cleanup()
+void cleanup(void)
 {
  if (flagmadeintd)
   {
-   seek_trunc(intdfd,0);
+   ftruncate(intdfd,0);
    if (unlink(intdfn) == -1) return;
   }
  if (flagmademess)
   {
-   seek_trunc(messfd,0);
+   ftruncate(messfd,0);
    if (unlink(messfn) == -1) return;
   }
 }
@@ -71,14 +84,13 @@ unsigned int receivedlen;
 char *received;
 /* "Received: (qmail-queue invoked by alias); 26 Sep 1995 04:46:54 -0000\n" */
 
-static unsigned int receivedfmt(s)
-char *s;
+static unsigned int receivedfmt(char *s)
 {
  unsigned int i;
  unsigned int len;
  len = 0;
  i = fmt_str(s,"Received: (qmail "); len += i; if (s) s += i;
- i = fmt_ulong(s,mypid); len += i; if (s) s += i;
+ i = ulong_fmt(s,mypid); len += i; if (s) s += i;
  i = fmt_str(s," invoked "); len += i; if (s) s += i;
  if (uid == auto_uida)
   { i = fmt_str(s,"by alias"); len += i; if (s) s += i; }
@@ -89,14 +101,14 @@ char *s;
  else
   {
    i = fmt_str(s,"by uid "); len += i; if (s) s += i;
-   i = fmt_ulong(s,uid); len += i; if (s) s += i;
+   i = ulong_fmt(s,uid); len += i; if (s) s += i;
   }
  i = fmt_str(s,"); "); len += i; if (s) s += i;
  i = date822fmt(s,&dt); len += i; if (s) s += i;
  return len;
 }
 
-void received_setup()
+void received_setup(void)
 {
  receivedlen = receivedfmt(NULL);
  received = alloc(receivedlen + 1);
@@ -104,28 +116,24 @@ void received_setup()
  receivedfmt(received);
 }
 
-unsigned int pidfmt(s,seq)
-char *s;
-unsigned long seq;
+unsigned int pidfmt(char *s, unsigned long seq)
 {
  unsigned int i;
  unsigned int len;
 
  len = 0;
  i = fmt_str(s,"pid/"); len += i; if (s) s += i;
- i = fmt_ulong(s,mypid); len += i; if (s) s += i;
+ i = ulong_fmt(s,mypid); len += i; if (s) s += i;
  i = fmt_str(s,"."); len += i; if (s) s += i;
- i = fmt_ulong(s,starttime); len += i; if (s) s += i;
+ i = ulong_fmt(s,starttime); len += i; if (s) s += i;
  i = fmt_str(s,"."); len += i; if (s) s += i;
- i = fmt_ulong(s,seq); len += i; if (s) s += i;
+ i = ulong_fmt(s,seq); len += i; if (s) s += i;
  ++len; if (s) *s++ = 0;
 
  return len;
 }
 
-char *fnnum(dirslash,flagsplit)
-char *dirslash;
-int flagsplit;
+char *fnnum(char *dirslash, int flagsplit)
 {
  char *s;
 
@@ -135,7 +143,7 @@ int flagsplit;
  return s;
 }
 
-void pidopen()
+void pidopen(void)
 {
  unsigned int len;
  unsigned long seq;
@@ -156,7 +164,7 @@ void pidopen()
  die(63);
 }
 
-char tmp[FMT_ULONG];
+char tmp[ULONG_FMT];
 
 int main(void)
 {
@@ -179,10 +187,32 @@ int main(void)
 
  received_setup();
 
- sig_pipeignore();
- sig_miscignore();
- sig_alarmcatch(sigalrm);
- sig_bugcatch(sigbug);
+ sig_ignore(SIGPIPE);
+
+ sig_ignore(SIGVTALRM);
+ sig_ignore(SIGPROF);
+ sig_ignore(SIGQUIT);
+ sig_ignore(SIGINT);
+ sig_ignore(SIGHUP);
+#ifdef SIGXCPU
+  sig_ignore(SIGXCPU);
+#endif
+#ifdef SIGXFSZ
+ sig_ignore(SIGXFSZ);
+#endif
+ sig_catch(SIGALRM, sigalrm);
+
+ sig_catch(SIGILL, sigbug);
+ sig_catch(SIGABRT, sigbug);
+ sig_catch(SIGFPE, sigbug);
+ sig_catch(SIGBUS, sigbug);
+ sig_catch(SIGSEGV, sigbug);
+#ifdef SIGSYS
+ sig_catch(SIGSYS, sigbug);
+#endif
+#ifdef SIGEMT
+ sig_catch(SIGEMT, sigbug);
+#endif
 
  alarm(DEATH);
 
@@ -198,64 +228,64 @@ int main(void)
  if (unlink(pidfn) == -1) die(63);
  flagmademess = 1;
 
- substdio_fdbuf(&ssout,write,messfd,outbuf,sizeof(outbuf));
- substdio_fdbuf(&ssin,read,0,inbuf,sizeof(inbuf));
+ buffer_init(&bout,buffer_write,messfd,outbuf,sizeof(outbuf));
+ buffer_init(&bin,buffer_read,0,inbuf,sizeof(inbuf));
 
- if (substdio_bput(&ssout,received,receivedlen) == -1) die_write();
+ if (buffer_put(&bout,received,receivedlen) == -1) die_write();
 
- switch(substdio_copy(&ssout,&ssin))
+ switch(buffer_copy(&bout,&bin))
   {
    case -2: die_read();
    case -3: die_write();
   }
 
- if (substdio_flush(&ssout) == -1) die_write();
+ if (buffer_flush(&bout) == -1) die_write();
  if (fsync(messfd) == -1) die_write();
 
  intdfd = open_excl(intdfn);
  if (intdfd == -1) die(65);
  flagmadeintd = 1;
 
- substdio_fdbuf(&ssout,write,intdfd,outbuf,sizeof(outbuf));
- substdio_fdbuf(&ssin,read,1,inbuf,sizeof(inbuf));
+ buffer_init(&bout,buffer_write,intdfd,outbuf,sizeof(outbuf));
+ buffer_init(&bin,buffer_read,1,inbuf,sizeof(inbuf));
 
- if (substdio_bput(&ssout,"u",1) == -1) die_write();
- if (substdio_bput(&ssout,tmp,fmt_ulong(tmp,uid)) == -1) die_write();
- if (substdio_bput(&ssout,"",1) == -1) die_write();
+ if (buffer_put(&bout,"u",1) == -1) die_write();
+ if (buffer_put(&bout,tmp,ulong_fmt(tmp,uid)) == -1) die_write();
+ if (buffer_put(&bout,"",1) == -1) die_write();
 
- if (substdio_bput(&ssout,"p",1) == -1) die_write();
- if (substdio_bput(&ssout,tmp,fmt_ulong(tmp,mypid)) == -1) die_write();
- if (substdio_bput(&ssout,"",1) == -1) die_write();
+ if (buffer_put(&bout,"p",1) == -1) die_write();
+ if (buffer_put(&bout,tmp,ulong_fmt(tmp,mypid)) == -1) die_write();
+ if (buffer_put(&bout,"",1) == -1) die_write();
 
- if (substdio_get(&ssin,&ch,1) < 1) die_read();
+ if (buffer_get(&bin,&ch,1) < 1) die_read();
  if (ch != 'F') die(91);
- if (substdio_bput(&ssout,&ch,1) == -1) die_write();
+ if (buffer_put(&bout,&ch,1) == -1) die_write();
  for (len = 0;len < ADDR;++len)
   {
-   if (substdio_get(&ssin,&ch,1) < 1) die_read();
-   if (substdio_put(&ssout,&ch,1) == -1) die_write();
+   if (buffer_get(&bin,&ch,1) < 1) die_read();
+   if (buffer_put(&bout,&ch,1) == -1) die_write();
    if (!ch) break;
   }
  if (len >= ADDR) die(11);
 
- if (substdio_bput(&ssout,QUEUE_EXTRA,QUEUE_EXTRALEN) == -1) die_write();
+ if (buffer_put(&bout,QUEUE_EXTRA,QUEUE_EXTRALEN) == -1) die_write();
 
  for (;;)
   {
-   if (substdio_get(&ssin,&ch,1) < 1) die_read();
+   if (buffer_get(&bin,&ch,1) < 1) die_read();
    if (!ch) break;
    if (ch != 'T') die(91);
-   if (substdio_bput(&ssout,&ch,1) == -1) die_write();
+   if (buffer_put(&bout,&ch,1) == -1) die_write();
    for (len = 0;len < ADDR;++len)
     {
-     if (substdio_get(&ssin,&ch,1) < 1) die_read();
-     if (substdio_bput(&ssout,&ch,1) == -1) die_write();
+     if (buffer_get(&bin,&ch,1) < 1) die_read();
+     if (buffer_put(&bout,&ch,1) == -1) die_write();
      if (!ch) break;
     }
    if (len >= ADDR) die(11);
   }
 
- if (substdio_flush(&ssout) == -1) die_write();
+ if (buffer_flush(&bout) == -1) die_write();
  if (fsync(intdfd) == -1) die_write();
 
  if (link(intdfn,todofn) == -1) die(66);

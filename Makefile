@@ -1265,20 +1265,19 @@ qmail-qstat.8
 
 qmail-queue: \
 load qmail-queue.o triggerpull.o fmtqfn.o date822fmt.o \
-datetime.a ndelay.a open.a sig.a substdio.a error.a \
-str.a fs.a auto_qmail.o auto_split.o ids.a
+datetime.a substdio_copy.a fs.a auto_qmail.o \
+auto_split.o ids.a
 	./load qmail-queue triggerpull.o fmtqfn.o \
-	date822fmt.o datetime.a ndelay.a open.a sig.a \
-	auto_qmail.o auto_split.o ids.a \
-	substdio.a error.a str.a fs.a
+	date822fmt.o datetime.a auto_qmail.o \
+	auto_split.o ids.a substdio_copy.a fs.a -lskarnet
 
 qmail-queue.0: \
 qmail-queue.8
 
 qmail-queue.o: \
-compile qmail-queue.c readwrite.h sig.h exit.h open.h seek.h fmt.h \
-alloc.h substdio.h datetime.h now.h datetime.h triggerpull.h extra.h \
-uidgid.h auto_qmail.h auto_uids.h auto_users.h date822fmt.h fmtqfn.h
+compile qmail-queue.c fmt.h datetime.h now.h datetime.h \
+substdio.h triggerpull.h extra.h uidgid.h auto_qmail.h \
+auto_uids.h auto_users.h date822fmt.h fmtqfn.h
 	./compile qmail-queue.c
 
 qmail-remote: \
