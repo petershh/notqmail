@@ -1226,21 +1226,17 @@ compile qmail-qmqpd.c auto_qmail.h qmail.h now.h datetime.h fmt.h
 
 qmail-qmtpd: \
 load qmail-qmtpd.o rcpthosts.o control.o constmap.o received.o \
-date822fmt.o qmail.o cdb.a fd.a wait.a datetime.a open.a \
-getln.a sig.a case.a env.a stralloc.a substdio.a error.a \
-str.a fs.a auto_qmail.o
+date822fmt.o qmail.o datetime.a getln.a fs.a auto_qmail.o
 	./load qmail-qmtpd rcpthosts.o control.o constmap.o \
-	received.o date822fmt.o qmail.o cdb.a fd.a wait.a \
-	datetime.a open.a getln.a sig.a case.a env.a stralloc.a \
-	substdio.a error.a str.a fs.a auto_qmail.o
+	received.o date822fmt.o qmail.o datetime.a getln.a \
+	fs.a auto_qmail.o -lskarnet
 
 qmail-qmtpd.0: \
 qmail-qmtpd.8
 
 qmail-qmtpd.o: \
-compile qmail-qmtpd.c stralloc.h gen_alloc.h substdio.h qmail.h \
-substdio.h now.h datetime.h str.h fmt.h env.h sig.h rcpthosts.h \
-auto_qmail.h readwrite.h control.h received.h exit.h
+compile qmail-qmtpd.c qmail.h now.h datetime.h fmt.h rcpthosts.h \
+auto_qmail.h control.h received.h
 	./compile qmail-qmtpd.c
 
 qmail-qread: \
