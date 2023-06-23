@@ -1,45 +1,59 @@
+#include <errno.h>
+#include <string.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
+
+#include <skalibs/stralloc.h>
+#include <skalibs/buffer.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/djbunix.h>
+#include <skalibs/types.h>
+
+/*
 #include "stralloc.h"
 #include "substdio.h"
 #include "subfd.h"
-#include "fmt.h"
 #include "str.h"
+#include "open.h"
+#include "readwrite.h"
+#include "error.h"
+#include "exit.h"
+*/
+
+#include "fmt.h"
 #include "getln.h"
 #include "fmtqfn.h"
 #include "readsubdir.h"
 #include "auto_qmail.h"
-#include "open.h"
 #include "datetime.h"
 #include "date822fmt.h"
 #include "noreturn.h"
-#include "readwrite.h"
-#include "error.h"
-#include "exit.h"
 
 readsubdir rs;
 
-void _noreturn_ die(n) int n; { substdio_flush(subfdout); _exit(n); }
+void _noreturn_ die(int n) { buffer_flush(buffer_1); _exit(n); }
 
-void warn(s1,s2) char *s1; char *s2;
+void warn(char *s1, char *s2)
 {
  char *x;
- x = error_str(errno);
- substdio_puts(subfdout,s1);
- substdio_puts(subfdout,s2);
- substdio_puts(subfdout,": ");
- substdio_puts(subfdout,x);
- substdio_puts(subfdout,"\n");
+ x = strerror(errno);
+ buffer_puts(buffer_1,s1);
+ buffer_puts(buffer_1,s2);
+ buffer_puts(buffer_1,": ");
+ buffer_puts(buffer_1,x);
+ buffer_puts(buffer_1,"\n");
 }
 
-void _noreturn_ die_nomem() { substdio_puts(subfdout,"fatal: out of memory\n"); die(111); }
+void _noreturn_ die_nomem() { buffer_puts(buffer_1,"fatal: out of memory\n"); die(111); }
 void _noreturn_ die_chdir() { warn("fatal: unable to chdir",""); die(111); }
 void _noreturn_ die_opendir(char *fn) { warn("fatal: unable to opendir ",fn); die(111); }
 
-void err(id) unsigned long id;
+void err(unsigned long id)
 {
- char foo[FMT_ULONG];
- foo[fmt_ulong(foo,id)] = 0;
+ char foo[ULONG_FMT];
+ foo[ulong_fmt(foo,id)] = 0;
  warn("warning: trouble with #",foo);
 }
 
@@ -50,15 +64,14 @@ char fnremote[FMTQFN];
 char fnbounce[FMTQFN];
 
 char inbuf[1024];
-stralloc sender = {0};
+stralloc sender = STRALLOC_ZERO;
 
 unsigned long id;
 datetime_sec qtime;
 int flagbounce;
 unsigned long size;
 
-unsigned int fmtstats(s)
-char *s;
+unsigned int fmtstats(char *s)
 {
  struct datetime dt;
  unsigned int len;
@@ -68,9 +81,9 @@ char *s;
  datetime_tai(&dt,qtime);
  i = date822fmt(s,&dt) - 7/*XXX*/; len += i; if (s) s += i;
  i = fmt_str(s," GMT  #"); len += i; if (s) s += i;
- i = fmt_ulong(s,id); len += i; if (s) s += i;
+ i = ulong_fmt(s,id); len += i; if (s) s += i;
  i = fmt_str(s,"  "); len += i; if (s) s += i;
- i = fmt_ulong(s,size); len += i; if (s) s += i;
+ i = ulong_fmt(s,size); len += i; if (s) s += i;
  i = fmt_str(s,"  <"); len += i; if (s) s += i;
  i = fmt_str(s,sender.s + 1); len += i; if (s) s += i;
  i = fmt_str(s,"> "); len += i; if (s) s += i;
@@ -82,21 +95,21 @@ char *s;
  return len;
 }
 
-stralloc stats = {0};
+stralloc stats = STRALLOC_ZERO;
 
-void out(s,n) char *s; unsigned int n;
+void out(char *s, unsigned int n)
 {
  while (n > 0)
   {
-   substdio_put(subfdout,((*s >= 32) && (*s <= 126)) ? s : "_",1);
+   buffer_put(buffer_1,((*s >= 32) && (*s <= 126)) ? s : "_",1);
    --n;
    ++s;
   }
 }
-void outs(s) char *s; { out(s,str_len(s)); }
-void outok(s) char *s; { substdio_puts(subfdout,s); }
+void outs(char *s) { out(s,str_len(s)); }
+void outok(char *s) { buffer_puts(buffer_1,s); }
 
-void putstats()
+void putstats(void)
 {
  if (!stralloc_ready(&stats,fmtstats(FMT_LEN))) die_nomem();
  stats.len = fmtstats(stats.s);
@@ -104,7 +117,7 @@ void putstats()
  outok("\n");
 }
 
-stralloc line = {0};
+stralloc line = STRALLOC_ZERO;
 
 int main(void)
 {
@@ -112,7 +125,7 @@ int main(void)
  int match;
  struct stat st;
  int fd;
- substdio ss;
+ buffer b;
  int x;
 
  if (chdir(auto_qmail) == -1) die_chdir();
@@ -134,42 +147,37 @@ int main(void)
 
      fd = open_read(fninfo);
      if (fd == -1) { err(id); continue; }
-     substdio_fdbuf(&ss,read,fd,inbuf,sizeof(inbuf));
-     if (getln(&ss,&sender,&match,0) == -1) die_nomem();
+     buffer_init(&b,buffer_read,fd,inbuf,sizeof(inbuf));
+     if (getln(&b,&sender,&match,0) == -1) die_nomem();
      if (fstat(fd,&st) == -1) { close(fd); err(id); continue; }
      close(fd);
      qtime = st.st_mtime;
 
      putstats();
 
-     for (channel = 0;channel < 2;++channel)
-      {
+     for (channel = 0;channel < 2;++channel) {
        fd = open_read(channel ? fnremote : fnlocal);
-       if (fd == -1)
-	{
-	 if (errno != error_noent)
-	   err(id);
-	}
-       else
-        {
-         for (;;)
-	  {
-	   if (getln(&ss,&line,&match,0) == -1) die_nomem();
-	   if (!match) break;
-	   switch(line.s[0])
-	    {
-	     case 'D':
-	       outok("  done");
-	     case 'T':
-	       outok(channel ? "\tremote\t" : "\tlocal\t");
-	       outs(line.s + 1);
-	       outok("\n");
-	       break;
-	    }
-	  }
+       if (fd == -1) {
+         if (errno != ENOENT)
+           err(id);
+       }
+       else {
+         for (;;) {
+           if (getln(&b,&line,&match,0) == -1) die_nomem();
+           if (!match) break;
+           switch(line.s[0]) {
+             case 'D':
+               outok("  done");
+             case 'T':
+               outok(channel ? "\tremote\t" : "\tlocal\t");
+               outs(line.s + 1);
+               outok("\n");
+               break;
+           }
+         }
          close(fd);
-        }
-      }
+       }
+     }
     }
 
  die(0);

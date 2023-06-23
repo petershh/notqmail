@@ -1241,20 +1241,16 @@ auto_qmail.h control.h received.h
 
 qmail-qread: \
 load qmail-qread.o fmtqfn.o readsubdir.o date822fmt.o datetime.a \
-open.a getln.a stralloc.a substdio.a error.a str.a fs.a \
-auto_qmail.o auto_split.o
+getln.a fs.a auto_qmail.o auto_split.o
 	./load qmail-qread fmtqfn.o readsubdir.o date822fmt.o \
-	datetime.a open.a getln.a stralloc.a substdio.a \
-	error.a str.a fs.a auto_qmail.o auto_split.o 
+	datetime.a getln.a fs.a auto_qmail.o auto_split.o -lskarnet
 
 qmail-qread.0: \
 qmail-qread.8
 
 qmail-qread.o: \
-compile qmail-qread.c stralloc.h gen_alloc.h substdio.h subfd.h \
-substdio.h fmt.h str.h getln.h fmtqfn.h readsubdir.h direntry.h \
-auto_qmail.h open.h datetime.h date822fmt.h readwrite.h error.h \
-exit.h
+compile qmail-qread.c fmt.h getln.h fmtqfn.h readsubdir.h \
+auto_qmail.h datetime.h date822fmt.h
 	./compile qmail-qread.c
 
 qmail-qstat: \
