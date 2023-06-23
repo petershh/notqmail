@@ -1819,7 +1819,7 @@ compile token822.c token822.h oflops.h
 	./compile token822.c
 
 trigger.o: \
-compile trigger.c select.h open.h trigger.h hasnpbg1.h
+compile trigger.c trigger.h hasnpbg1.h
 	./compile trigger.c
 
 triggerpull.o: \
