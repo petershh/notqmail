@@ -1829,7 +1829,7 @@ compile trigger.c select.h open.h trigger.h hasnpbg1.h
 	./compile trigger.c
 
 triggerpull.o: \
-compile triggerpull.c ndelay.h open.h triggerpull.h
+compile triggerpull.c triggerpull.h
 	./compile triggerpull.c
 
 uid.o: \

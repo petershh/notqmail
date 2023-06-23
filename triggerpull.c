@@ -1,10 +1,15 @@
+#include <unistd.h>
+
+#include <skalibs/djbunix.h>
+
 #include "triggerpull.h"
 
-#include <unistd.h>
+/*
 #include "ndelay.h"
 #include "open.h"
+*/
 
-void triggerpull()
+void triggerpull(void)
 {
  int fd;
 
