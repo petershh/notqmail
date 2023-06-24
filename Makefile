@@ -384,7 +384,7 @@ substdio.h error.h control.h alloc.h scan.h
 	./compile control.c
 
 date822fmt.o: \
-compile date822fmt.c datetime.h fmt.h date822fmt.h
+compile date822fmt.c fmt.h date822fmt.h
 	./compile date822fmt.c
 
 datemail: \
