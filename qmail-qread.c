@@ -34,6 +34,8 @@
 #include "date822fmt.h"
 #include "noreturn.h"
 
+#define STATS_FMT DATE822FMT + 7 + ULONG_FMT + 2 + ULONG_FMT + 3 + 2 + 9
+
 readsubdir rs;
 
 void _noreturn_ die(int n) { buffer_flush(buffer_1); _exit(n); }
@@ -114,7 +116,7 @@ void outok(char *s) { buffer_puts(buffer_1,s); }
 
 void putstats(void)
 {
- if (!stralloc_ready(&stats,fmtstats(FMT_LEN))) die_nomem();
+ if (!stralloc_ready(&stats, STATS_FMT + str_len(sender.s) - 1)) die_nomem();
  stats.len = fmtstats(stats.s);
  out(stats.s,stats.len);
  outok("\n");
