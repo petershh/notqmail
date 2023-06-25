@@ -9,6 +9,7 @@
 #include <skalibs/sgetopt.h>
 #include <skalibs/bytestr.h>
 #include <skalibs/types.h>
+#include <skalibs/tai.h>
 
 /*
 #include "sig.h"
@@ -23,14 +24,14 @@
 #include "gen_allocdefs.h"
 #include "error.h"
 #include "exit.h"
+#include "datetime.h"
+#include "now.h"
 */
 
-#include "now.h"
 #include "getln.h"
 #include "hfield.h"
 #include "token822.h"
 #include "control.h"
-#include "datetime.h"
 #include "qmail.h"
 #include "quote.h"
 #include "headerbody.h"
@@ -42,7 +43,7 @@
 
 #define LINELEN 80
 
-datetime_sec starttime;
+tain starttime;
 
 char const *qmopts;
 int flagdeletesender = 0;
@@ -518,7 +519,7 @@ void defaultfrommake(void)
 stralloc defaultreturnpath = STRALLOC_ZERO;
 genalloc drp = GENALLOC_ZERO;
 stralloc hackedruser = STRALLOC_ZERO;
-char strnum[ULONG_FMT];
+char strnum[TAIN_FMT];
 
 void dodefaultreturnpath(void)
 {
@@ -527,7 +528,7 @@ void dodefaultreturnpath(void)
  if (flaghackmess)
   {
    if (!stralloc_cats(&hackedruser,"-")) die_nomem();
-   if (!stralloc_catb(&hackedruser,strnum,ulong_fmt(strnum,(unsigned long) starttime))) die_nomem();
+   if (!stralloc_catb(&hackedruser,strnum,tain_fmt(strnum, &starttime))) die_nomem();
    if (!stralloc_cats(&hackedruser,".")) die_nomem();
    if (!stralloc_catb(&hackedruser,strnum,ulong_fmt(strnum,(unsigned long) getpid()))) die_nomem();
   }
@@ -641,13 +642,13 @@ void finishheader(void)
   {
    if (!htypeseen[H_R_DATE])
     {
-     if (!newfield_datemake(starttime)) die_nomem();
+     if (!newfield_datemake(tain_secp(&starttime))) die_nomem();
      puts("Resent-");
      put(newfield_date.s,newfield_date.len);
     }
    if (!htypeseen[H_R_MESSAGEID])
     {
-     if (!newfield_msgidmake(control_idhost.s,control_idhost.len,starttime)) die_nomem();
+     if (!newfield_msgidmake(control_idhost.s,control_idhost.len,tain_secp(&starttime))) die_nomem();
      puts("Resent-");
      put(newfield_msgid.s,newfield_msgid.len);
     }
@@ -664,12 +665,12 @@ void finishheader(void)
   {
    if (!htypeseen[H_DATE])
     {
-     if (!newfield_datemake(starttime)) die_nomem();
+     if (!newfield_datemake(tain_secp(&starttime))) die_nomem();
      put(newfield_date.s,newfield_date.len);
     }
    if (!htypeseen[H_MESSAGEID])
     {
-     if (!newfield_msgidmake(control_idhost.s,control_idhost.len,starttime)) die_nomem();
+     if (!newfield_msgidmake(control_idhost.s,control_idhost.len,tain_secp(&starttime))) die_nomem();
      put(newfield_msgid.s,newfield_msgid.len);
     }
    if (!htypeseen[H_FROM])
@@ -739,7 +740,7 @@ int main(int argc, char **argv)
 
  sig_ignore(SIGPIPE);
 
- starttime = now();
+ tain_now(&starttime);
 
  qmopts = env_get("QMAILINJECT");
  if (qmopts)

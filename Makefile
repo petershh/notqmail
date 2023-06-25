@@ -1034,18 +1034,18 @@ qmail-header.5
 
 qmail-inject: \
 load qmail-inject.o headerbody.o hfield.o newfield.o quote.o \
-control.o date822fmt.o constmap.o qmail.o datetime.a token822.o getln.a \
+control.o date822fmt.o constmap.o qmail.o token822.o getln.a \
 fs.a auto_qmail.o
 	./load qmail-inject headerbody.o hfield.o newfield.o \
 	quote.o control.o date822fmt.o constmap.o qmail.o \
-	getln.a datetime.a token822.o fs.a auto_qmail.o -lskarnet
+	getln.a token822.o fs.a auto_qmail.o -lskarnet
 
 qmail-inject.0: \
 qmail-inject.8
 
 qmail-inject.o: \
 compile qmail-inject.c getln.h fmt.h hfield.h token822.h control.h \
-qmail.h now.h datetime.h quote.h headerbody.h auto_qmail.h newfield.h \
+qmail.h quote.h headerbody.h auto_qmail.h newfield.h \
 constmap.h oflops.h
 	./compile qmail-inject.c
 
