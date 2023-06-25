@@ -21,12 +21,12 @@ static char *montab[12] = {
 
 static char result[30];
 
-char *myctime(tai const *t)
+char *myctime(tain const *t)
 {
  struct tm dt;
  unsigned int len;
  char *nullbyte;
- localtm_from_tai(&dt, t, 0);
+ localtm_from_tai(&dt, tain_secp(t), 0);
  len = 0;
  nullbyte = strcpy(result + len,daytab[dt.tm_wday]);
  len = nullbyte - result;
