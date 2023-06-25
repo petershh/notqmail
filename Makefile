@@ -1062,17 +1062,17 @@ qmail-limits.9 conf-qmail conf-break conf-spawn
 
 qmail-local: \
 load qmail-local.o qmail.o quote.o gfrom.o myctime.o \
-slurpclose.o getln.a lock.a fs.a substdio_copy.a datetime.a \
+slurpclose.o getln.a lock.a fs.a substdio_copy.a \
 auto_qmail.o auto_patrn.o socket.lib
 	./load qmail-local qmail.o quote.o gfrom.o myctime.o \
-	slurpclose.o getln.a lock.a fs.a substdio_copy.a datetime.a \
+	slurpclose.o getln.a lock.a fs.a substdio_copy.a \
 	auto_qmail.o auto_patrn.o  `cat socket.lib` -lskarnet
 
 qmail-local.0: \
 qmail-local.8
 
 qmail-local.o: \
-compile qmail-local.c lock.h getln.h fmt.h now.h datetime.h \
+compile qmail-local.c lock.h getln.h fmt.h \
 substdio.h quote.h qmail.h slurpclose.h myctime.h gfrom.h \
 auto_patrn.h
 	./compile qmail-local.c

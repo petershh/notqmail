@@ -18,6 +18,7 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/error.h>
 #include <skalibs/exec.h>
+#include <skalibs/tai.h>
 
 /*
 #include "readwrite.h"
@@ -36,13 +37,13 @@
 #include "stralloc.h"
 #include "str.h"
 #include "case.h"
+#include "now.h"
+#include "datetime.h"
 */
 
 #include "substdio.h"
-#include "datetime.h"
 #include "getln.h"
 #include "fmt.h"
-#include "now.h"
 #include "quote.h"
 #include "qmail.h"
 #include "myctime.h"
@@ -96,15 +97,15 @@ char outbuf[1024];
 
 /* child process */
 
-char fntmptph[80 + ULONG_FMT * 2];
-char fnnewtph[80 + ULONG_FMT * 2];
+char fntmptph[80 + TAIN_FMT * 2];
+char fnnewtph[80 + TAIN_FMT * 2];
 void tryunlinktmp() { unlink(fntmptph); }
 void sigalrm() { tryunlinktmp(); _exit(3); }
 
 void maildir_child(char *dir)
 {
  unsigned long pid;
- unsigned long time;
+ tain time;
  char myhost[64];
  char *s;
  int loop;
@@ -119,10 +120,10 @@ void maildir_child(char *dir)
  gethostname(myhost,sizeof(myhost));
  for (loop = 0;;++loop)
   {
-   time = now();
+   tain_now(&time);
    s = fntmptph;
    s += fmt_str(s,"tmp/");
-   s += ulong_fmt(s,time); *s++ = '.';
+   s += tain_fmt(s,&time); *s++ = '.';
    s += ulong_fmt(s,pid); *s++ = '.';
    s += fmt_strn(s,myhost,sizeof(myhost)); *s++ = 0;
    alarm(86400);
@@ -469,7 +470,7 @@ int main(int argc, char **argv)
  int fd;
  unsigned int numforward;
  char **recips;
- datetime_sec starttime;
+ tain starttime;
  int flagforwardonly;
  char *x;
  subgetopt l = SUBGETOPT_ZERO;
@@ -563,8 +564,8 @@ int main(int argc, char **argv)
  else
    if (!stralloc_cats(&ufline,"MAILER-DAEMON")) temp_nomem();
  if (!stralloc_cats(&ufline," ")) temp_nomem();
- starttime = now();
- if (!stralloc_cats(&ufline,myctime(starttime))) temp_nomem();
+ tain_now(&starttime);
+ if (!stralloc_cats(&ufline,myctime(tain_secp(&starttime)))) temp_nomem();
 
  if (!stralloc_copy(&foo,&ufline)) temp_nomem();
  if (!stralloc_0(&foo)) temp_nomem();
