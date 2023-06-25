@@ -801,18 +801,16 @@ compile maildir.c prioq.h maildir.h strerr.h
 
 maildir2mbox: \
 load maildir2mbox.o maildir.o prioq.o myctime.o gfrom.o \
-getln.a strerr.a error.a fs.a datetime.a substdio_copy.a
+getln.a strerr.a fs.a substdio_copy.a
 	./load maildir2mbox maildir.o prioq.o myctime.o \
-	gfrom.o getln.a strerr.a error.a fs.a datetime.a substdio_copy.a -lskarnet
+	gfrom.o getln.a strerr.a fs.a substdio_copy.a -lskarnet
 
 maildir2mbox.0: \
 maildir2mbox.1
 
 maildir2mbox.o: \
-compile maildir2mbox.c readwrite.h prioq.h datetime.h gen_alloc.h \
-env.h stralloc.h gen_alloc.h subfd.h substdio.h substdio.h getln.h \
-error.h open.h lock.h gfrom.h str.h myctime.h maildir.h \
-strerr.h
+compile maildir2mbox.c prioq.h substdio.h getln.h \
+gfrom.h myctime.h maildir.h strerr.h
 	./compile maildir2mbox.c
 
 maildirmake: \
@@ -1706,7 +1704,7 @@ compile strerr_die.c strerr.h
 	./compile strerr_die.c
 
 strerr_sys.o: \
-compile strerr_sys.c error.h strerr.h
+compile strerr_sys.c strerr.h
 	./compile strerr_sys.c
 
 subfderr.o: \

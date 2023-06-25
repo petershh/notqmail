@@ -23,6 +23,7 @@ extern int rename(const char *, const char *);
 #include <skalibs/strerr.h>
 #include <skalibs/env.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/genalloc.h>
 
 #include "getln.h"
 #include "prioq.h"
@@ -36,8 +37,8 @@ char const *mbox;
 char const *mboxtmp;
 
 stralloc filenames = STRALLOC_ZERO;
-prioq pq = {0};
-prioq pq2 = {0};
+genalloc pq = GENALLOC_ZERO;
+genalloc pq2 = GENALLOC_ZERO;
 
 stralloc line = STRALLOC_ZERO;
 
