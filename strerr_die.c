@@ -3,6 +3,8 @@
 #include "subfd.h"
 */
 
+#include <unistd.h>
+
 #include <skalibs/buffer.h>
 
 #include "strerr.h"
