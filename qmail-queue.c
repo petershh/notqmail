@@ -2,12 +2,15 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <signal.h>
+#include <time.h>
 
 #include <skalibs/sig.h>
 #include <skalibs/types.h>
 #include <skalibs/alloc.h>
 #include <skalibs/buffer.h>
 #include <skalibs/djbunix.h>
+#include <skalibs/tai.h>
+#include <skalibs/djbtime.h>
 
 /*
 #include "readwrite.h"
@@ -17,12 +20,12 @@
 #include "seek.h"
 #include "alloc.h"
 #include "substdio.h"
+#include "datetime.h"
+#include "now.h"
 */
 
 #include "substdio.h"
 #include "fmt.h"
-#include "datetime.h"
-#include "now.h"
 #include "triggerpull.h"
 #include "extra.h"
 #include "noreturn.h"
@@ -36,13 +39,16 @@
 #define DEATH 86400 /* 24 hours; _must_ be below q-s's OSSIFIED (36 hours) */
 #define ADDR 1003
 
+#define PIDFMT_LEN 4 + ULONG_FMT + 1 + TAIN_FMT + 1 + ULONG_FMT + 1
+#define RECIEVED_FMT 17 + PID_FMT + 9 + 7 + PID_FMT + 3 + DATE822FMT + 1
+
 char inbuf[2048];
 buffer bin;
 char outbuf[256];
 buffer bout;
 
-datetime_sec starttime;
-struct datetime dt;
+tain starttime;
+struct tm dt;
 unsigned long mypid;
 uid_t uid;
 char *pidfn;
@@ -90,7 +96,7 @@ static unsigned int receivedfmt(char *s)
  unsigned int len;
  len = 0;
  i = fmt_str(s,"Received: (qmail "); len += i; if (s) s += i;
- i = ulong_fmt(s,mypid); len += i; if (s) s += i;
+ i = pid_fmt(s,mypid); len += i; if (s) s += i;
  i = fmt_str(s," invoked "); len += i; if (s) s += i;
  if (uid == auto_uida)
   { i = fmt_str(s,"by alias"); len += i; if (s) s += i; }
@@ -101,7 +107,7 @@ static unsigned int receivedfmt(char *s)
  else
   {
    i = fmt_str(s,"by uid "); len += i; if (s) s += i;
-   i = ulong_fmt(s,uid); len += i; if (s) s += i;
+   i = pid_fmt(s,uid); len += i; if (s) s += i;
   }
  i = fmt_str(s,"); "); len += i; if (s) s += i;
  i = date822fmt(s,&dt); len += i; if (s) s += i;
@@ -110,8 +116,7 @@ static unsigned int receivedfmt(char *s)
 
 void received_setup(void)
 {
- receivedlen = receivedfmt(NULL);
- received = alloc(receivedlen + 1);
+ received = alloc(RECIEVED_FMT);
  if (!received) die(51);
  receivedfmt(received);
 }
@@ -125,7 +130,7 @@ unsigned int pidfmt(char *s, unsigned long seq)
  i = fmt_str(s,"pid/"); len += i; if (s) s += i;
  i = ulong_fmt(s,mypid); len += i; if (s) s += i;
  i = fmt_str(s,"."); len += i; if (s) s += i;
- i = ulong_fmt(s,starttime); len += i; if (s) s += i;
+ i = tain_fmt(s,&starttime); len += i; if (s) s += i;
  i = fmt_str(s,"."); len += i; if (s) s += i;
  i = ulong_fmt(s,seq); len += i; if (s) s += i;
  ++len; if (s) *s++ = 0;
@@ -149,13 +154,12 @@ void pidopen(void)
  unsigned long seq;
 
  seq = 1;
- len = pidfmt(NULL,seq);
- pidfn = alloc(len);
+ /* len = pidfmt(NULL,seq); */
+ pidfn = alloc(PID_FMT);
  if (!pidfn) die(51);
 
  for (seq = 1;seq < 10;++seq)
   {
-   if (pidfmt(NULL,seq) > len) die(81); /* paranoia */
    pidfmt(pidfn,seq);
    messfd = open_excl(pidfn);
    if (messfd != -1) return;
@@ -178,8 +182,8 @@ int main(void)
 
  mypid = getpid();
  uid = getuid();
- starttime = now();
- datetime_tai(&dt,starttime);
+ tain_now(&starttime);
+ localtm_from_tai(&dt, tain_secp(&starttime), 0);
 
  auto_uida = inituid(auto_usera);
  auto_uidd = inituid(auto_userd);
