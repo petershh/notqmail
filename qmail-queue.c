@@ -142,7 +142,7 @@ char *fnnum(char *dirslash, int flagsplit)
 {
  char *s;
 
- s = alloc(fmtqfn(NULL,dirslash,messnum,flagsplit));
+ s = alloc(FMTQFN_MIN + str_len(dirslash));
  if (!s) die(51);
  fmtqfn(s,dirslash,messnum,flagsplit);
  return s;
@@ -154,7 +154,6 @@ void pidopen(void)
  unsigned long seq;
 
  seq = 1;
- /* len = pidfmt(NULL,seq); */
  pidfn = alloc(PID_FMT);
  if (!pidfn) die(51);
 
