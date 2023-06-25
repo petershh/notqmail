@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <string.h>
+#include <time.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -10,6 +11,8 @@
 #include <skalibs/bytestr.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/types.h>
+#include <skalibs/tai.h>
+#include <skalibs/djbtime.h>
 
 /*
 #include "stralloc.h"
@@ -20,6 +23,7 @@
 #include "readwrite.h"
 #include "error.h"
 #include "exit.h"
+#include "datetime.h"
 */
 
 #include "fmt.h"
@@ -27,7 +31,6 @@
 #include "fmtqfn.h"
 #include "readsubdir.h"
 #include "auto_qmail.h"
-#include "datetime.h"
 #include "date822fmt.h"
 #include "noreturn.h"
 
@@ -67,18 +70,18 @@ char inbuf[1024];
 stralloc sender = STRALLOC_ZERO;
 
 unsigned long id;
-datetime_sec qtime;
+tain qtime;
 int flagbounce;
 unsigned long size;
 
 unsigned int fmtstats(char *s)
 {
- struct datetime dt;
+ struct tm dt;
  unsigned int len;
  unsigned int i;
 
  len = 0;
- datetime_tai(&dt,qtime);
+ localtm_from_tai(&dt, tain_secp(&qtime), 0);
  i = date822fmt(s,&dt) - 7/*XXX*/; len += i; if (s) s += i;
  i = fmt_str(s," GMT  #"); len += i; if (s) s += i;
  i = ulong_fmt(s,id); len += i; if (s) s += i;
@@ -151,7 +154,7 @@ int main(void)
      if (getln(&b,&sender,&match,0) == -1) die_nomem();
      if (fstat(fd,&st) == -1) { close(fd); err(id); continue; }
      close(fd);
-     qtime = st.st_mtime;
+     tain_from_timespec_sysclock(&qtime, &st.st_mtim);
 
      putstats();
 

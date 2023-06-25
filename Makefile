@@ -1237,17 +1237,17 @@ auto_qmail.h control.h received.h
 	./compile qmail-qmtpd.c
 
 qmail-qread: \
-load qmail-qread.o fmtqfn.o readsubdir.o date822fmt.o datetime.a \
+load qmail-qread.o fmtqfn.o readsubdir.o date822fmt.o \
 getln.a fs.a auto_qmail.o auto_split.o
 	./load qmail-qread fmtqfn.o readsubdir.o date822fmt.o \
-	datetime.a getln.a fs.a auto_qmail.o auto_split.o -lskarnet
+	getln.a fs.a auto_qmail.o auto_split.o -lskarnet
 
 qmail-qread.0: \
 qmail-qread.8
 
 qmail-qread.o: \
 compile qmail-qread.c fmt.h getln.h fmtqfn.h readsubdir.h \
-auto_qmail.h datetime.h date822fmt.h
+auto_qmail.h date822fmt.h
 	./compile qmail-qread.c
 
 qmail-qstat: \
