@@ -9,6 +9,7 @@
 #include <skalibs/sig.h>
 #include <skalibs/types.h>
 #include <skalibs/direntry.h>
+#include <skalibs/tai.h>
 
 /*
 #include "readwrite.h"
@@ -24,10 +25,10 @@
 #include "fmt.h"
 #include "error.h"
 #include "exit.h"
-*/
-
 #include "datetime.h"
 #include "now.h"
+*/
+
 #include "getln.h"
 #include "auto_qmail.h"
 #include "fmtqfn.h"
@@ -36,14 +37,15 @@
 
 stralloc line = STRALLOC_ZERO;
 
-void cleanuppid()
+void cleanuppid(void)
 {
  DIR *dir;
  direntry *d;
  struct stat st;
- datetime_sec time;
+ tain time;
+ tain atime;
 
- time = now();
+ tain_now(&time);
  dir = opendir("pid");
  if (!dir) return;
  while ((d = readdir(dir)))
@@ -54,7 +56,9 @@ void cleanuppid()
    if (!stralloc_cats(&line,d->d_name)) continue;
    if (!stralloc_0(&line)) continue;
    if (stat(line.s,&st) == -1) continue;
-   if (time < st.st_atime + OSSIFIED) continue;
+   tain_from_timespec_sysclock(&atime, &st.st_atim);
+   tain_addsec(&atime, &atime, OSSIFIED);
+   if (tain_less(&time, &atime)) continue;
    unlink(line.s);
   }
  closedir(dir);

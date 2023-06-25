@@ -993,7 +993,7 @@ qmail-clean.0: \
 qmail-clean.8
 
 qmail-clean.o: \
-compile qmail-clean.c now.h datetime.h getln.h fmtqfn.h auto_qmail.h
+compile qmail-clean.c getln.h fmtqfn.h auto_qmail.h
 	./compile qmail-clean.c
 
 qmail-command.0: \
