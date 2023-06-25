@@ -1,4 +1,4 @@
-#include "maildir.h"
+#include <time.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -6,22 +6,27 @@
 
 #include <skalibs/env.h>
 #include <skalibs/stralloc.h>
+#include <skalibs/tai.h>
+#include <skalibs/djbtime.h>
+#include <skalibs/direntry.h>
+#include <skalibs/genalloc.h>
 
 /*
 #include "env.h"
 #include "stralloc.h"
 #include "str.h"
+#include "now.h"
+#include "datetime.h"
 */
 
-#include "now.h"
+#include "maildir.h"
+
 #include "prioq.h"
-#include "datetime.h"
-#include "direntry.h"
 
 struct strerr maildir_chdir_err;
 struct strerr maildir_scan_err;
 
-int maildir_chdir()
+int maildir_chdir(void)
 {
  char const *maildir;
  maildir = env_get("MAILDIR");
@@ -36,10 +41,10 @@ void maildir_clean(stralloc *tmpname)
 {
  DIR *dir;
  direntry *d;
- datetime_sec time;
+ tai time;
  struct stat st;
 
- time = now();
+ tai_now(&time);
 
  dir = opendir("tmp");
  if (!dir) return;
@@ -50,14 +55,20 @@ void maildir_clean(stralloc *tmpname)
    if (!stralloc_copys(tmpname,"tmp/")) break;
    if (!stralloc_cats(tmpname,d->d_name)) break;
    if (!stralloc_0(tmpname)) break;
-   if (stat(tmpname->s,&st) == 0)
-     if (time > st.st_atime + 129600)
+   if (stat(tmpname->s,&st) == 0) {
+     tai delta, atime;
+     tai_uint(&delta, 129600);
+
+     tai_from_time(&atime, st.st_atime);
+     tai_add(&atime, &atime, &delta);
+     if (tai_less(&atime, &time))
        unlink(tmpname->s);
+   }
   }
  closedir(dir);
 }
 
-static int append(prioq *pq, stralloc *filenames, char *subdir, datetime_sec time)
+static int append(genalloc *pq, stralloc *filenames, char *subdir, tai const *time)
 {
  DIR *dir;
  direntry *d;
@@ -77,13 +88,15 @@ static int append(prioq *pq, stralloc *filenames, char *subdir, datetime_sec tim
    if (!stralloc_cats(filenames,"/")) break;
    if (!stralloc_cats(filenames,d->d_name)) break;
    if (!stralloc_0(filenames)) break;
-   if (stat(filenames->s + pos,&st) == 0)
-     if (st.st_mtime < time) /* don't want to mix up the order */
-      {
-       pe.dt = st.st_mtime;
+   if (stat(filenames->s + pos,&st) == 0) {
+     tai mtime;
+     tai_from_time(&mtime, st.st_mtime);
+     if (tai_less(&mtime, time)) { /* don't want to mix up the order */
+       pe.dt = mtime;
        pe.id = pos;
        if (!prioq_insert(pq,&pe)) break;
       }
+   }
   }
 
  closedir(dir);
@@ -91,17 +104,17 @@ static int append(prioq *pq, stralloc *filenames, char *subdir, datetime_sec tim
  return 0;
 }
 
-int maildir_scan(prioq *pq, stralloc *filenames, int flagnew, int flagcur)
+int maildir_scan(genalloc *pq, stralloc *filenames, int flagnew, int flagcur)
 {
  struct prioq_elt pe;
- datetime_sec time;
+ tai time;
 
  if (!stralloc_copys(filenames,"")) return 0;
  while (prioq_min(pq,&pe)) prioq_delmin(pq);
 
- time = now();
+ tai_now(&time);
 
- if (flagnew) if (append(pq,filenames,"new",time) == -1) return -1;
- if (flagcur) if (append(pq,filenames,"cur",time) == -1) return -1;
+ if (flagnew) if (append(pq,filenames,"new",&time) == -1) return -1;
+ if (flagcur) if (append(pq,filenames,"cur",&time) == -1) return -1;
  return 0;
 }

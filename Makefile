@@ -796,9 +796,7 @@ maildir.0: \
 maildir.5
 
 maildir.o: \
-compile maildir.c prioq.h datetime.h \
-direntry.h datetime.h now.h datetime.h str.h maildir.h \
-strerr.h
+compile maildir.c prioq.h maildir.h strerr.h
 	./compile maildir.c
 
 maildir2mbox: \
