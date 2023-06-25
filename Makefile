@@ -876,7 +876,7 @@ mbox.0: \
 mbox.5
 
 myctime.o: \
-compile myctime.c datetime.h fmt.h myctime.h
+compile myctime.c fmt.h myctime.h
 	./compile myctime.c
 
 ndelay.a: \
