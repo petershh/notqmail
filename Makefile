@@ -1437,7 +1437,7 @@ qmail-tcpto.8
 
 qmail-tcpto.o: \
 compile qmail-tcpto.c subfd.h substdio.h auto_qmail.h byte.h \
-fmt.h ip.h lock.h error.h exit.h datetime.h now.h datetime.h open.h
+fmt.h ip.h lock.h error.h exit.h open.h
 	./compile qmail-tcpto.c
 
 qmail-upq: \

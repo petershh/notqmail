@@ -1,8 +1,11 @@
+#include <stdint.h>
+
 #include <unistd.h>
 
 #include <skalibs/djbunix.h>
 #include <skalibs/ip46.h>
 #include <skalibs/bytestr.h>
+#include <skalibs/tai.h>
 
 /*
 #include "open.h"
@@ -10,12 +13,12 @@
 #include "ip.h"
 #include "byte.h"
 #include "readwrite.h"
+#include "now.h"
+#include "datetime.h"
 */
 
 #include "tcpto.h"
 #include "lock.h"
-#include "now.h"
-#include "datetime.h"
 
 char tcpto_buf[1024];
 
@@ -60,12 +63,14 @@ int tcpto(ip46 *ip)
       flagwasthere = 1;
       if (record[4] >= 2)
       {
-        datetime_sec when = (unsigned long) (unsigned char) record[11];
+        tai now;
+        uint64_t when = (unsigned long) (unsigned char) record[11];
         when = (when << 8) + (unsigned long) (unsigned char) record[10];
         when = (when << 8) + (unsigned long) (unsigned char) record[9];
         when = (when << 8) + (unsigned long) (unsigned char) record[8];
 
-        if (now() - when < ((60 + (getpid() & 31)) << 6))
+        tai_now(&now);
+        if (tai_sec(&now) - when < ((60 + (getpid() & 31)) << 6))
           return 1;
       }
       return 0;
@@ -80,8 +85,9 @@ void tcpto_err(ip46 *ip, int flagerr)
  int n;
  int i;
  char *record;
- datetime_sec when;
- datetime_sec lastwhen;
+ uint64_t when;
+ uint64_t lastwhen;
+ tai now;
 
  if (!flagerr)
    if (!flagwasthere)
@@ -103,7 +109,8 @@ void tcpto_err(ip46 *ip, int flagerr)
        lastwhen = (lastwhen << 8) + (unsigned long) (unsigned char) record[10];
        lastwhen = (lastwhen << 8) + (unsigned long) (unsigned char) record[9];
        lastwhen = (lastwhen << 8) + (unsigned long) (unsigned char) record[8];
-       when = now();
+       tai_now(&now);
+       when = tai_sec(&now);
 
        if (record[4] && (when < 120 + lastwhen)) { close(fdlock); return; }
 
@@ -134,7 +141,7 @@ void tcpto_err(ip46 *ip, int flagerr)
  if (i >= n)
   {
    int firstpos = -1;
-   datetime_sec firstwhen;
+   uint64_t firstwhen = 0;
    record = tcpto_buf;
    for (i = 0;i < n;++i)
     {
@@ -157,7 +164,8 @@ void tcpto_err(ip46 *ip, int flagerr)
   {
    record = tcpto_buf + (i << 4);
    byte_copy(record,4,ip->ip); /* XXX: wouldn't work with ipv6 addrs*/
-   when = now();
+   tai_now(&now);
+   when = tai_sec(&now);
    record[8] = when; when >>= 8;
    record[9] = when; when >>= 8;
    record[10] = when; when >>= 8;
