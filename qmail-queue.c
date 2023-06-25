@@ -11,6 +11,7 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/tai.h>
 #include <skalibs/djbtime.h>
+#include <skalibs/bytestr.h>
 
 /*
 #include "readwrite.h"
