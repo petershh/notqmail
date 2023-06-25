@@ -933,11 +933,11 @@ it man
 	./instpackage
 
 predate: \
-load predate.o datetime.a strerr.a substdio_copy.a
-	./load predate datetime.a strerr.a substdio_copy.a -lskarnet
+load predate.o strerr.a substdio_copy.a
+	./load predate strerr.a substdio_copy.a -lskarnet
 
 predate.o: \
-compile predate.c datetime.h wait.h fmt.h strerr.h substdio.h
+compile predate.c wait.h fmt.h strerr.h substdio.h
 	./compile predate.c
 
 preline: \

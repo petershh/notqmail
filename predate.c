@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #include <sys/types.h>
 #include <signal.h>
 #include <unistd.h>
@@ -17,6 +19,9 @@
 #include <skalibs/sig.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/types.h>
+#include <skalibs/tai.h>
+#include <skalibs/djbtime.h>
+#include <skalibs/lolstdio.h>
 
 #include "datetime.h"
 #include "strerr.h"
@@ -34,11 +39,10 @@ char outbuf[1024];
 
 int main(int argc, char **argv)
 {
-  time_t now;
-  struct tm *tm;
-  struct datetime dt;
-  datetime_sec utc;
-  datetime_sec local;
+  tai now;
+  struct tm tm;
+  uint64_t utc;
+  uint64_t local;
   int minutes;
   int pi[2];
   buffer ss;
@@ -69,38 +73,26 @@ int main(int argc, char **argv)
   close(pi[0]);
   buffer_init(&ss, buffer_write, pi[1], outbuf, sizeof(outbuf));
 
-  now = time(NULL);
+  tai_now(&now);
 
-  tm = gmtime(&now);
-  dt.year = tm->tm_year;
-  dt.mon = tm->tm_mon;
-  dt.mday = tm->tm_mday;
-  dt.hour = tm->tm_hour;
-  dt.min = tm->tm_min;
-  dt.sec = tm->tm_sec;
-  utc = datetime_untai(&dt); /* utc == now, if gmtime ignores leap seconds */
+  localtm_from_tai(&tm, &now, 0);
+  utc_from_localtm(&utc, &tm);
 
-  tm = localtime(&now);
-  dt.year = tm->tm_year;
-  dt.mon = tm->tm_mon;
-  dt.mday = tm->tm_mday;
-  dt.hour = tm->tm_hour;
-  dt.min = tm->tm_min;
-  dt.sec = tm->tm_sec;
-  local = datetime_untai(&dt);
+  utc_from_tai(&local, &now);
+  localtm_from_tai(&tm, &now, 1);
 
   buffer_puts(&ss,"Date: ");
-  buffer_put(&ss,num,uint_fmt(num,dt.mday));
+  buffer_put(&ss,num,uint_fmt(num,tm.tm_mday));
   buffer_puts(&ss," ");
-  buffer_puts(&ss,montab[dt.mon]);
+  buffer_puts(&ss,montab[tm.tm_mon]);
   buffer_puts(&ss," ");
-  buffer_put(&ss,num,uint_fmt(num,dt.year + 1900));
+  buffer_put(&ss,num,uint_fmt(num,tm.tm_year + 1900));
   buffer_puts(&ss," ");
-  buffer_put(&ss,num,uint0_fmt(num,dt.hour,2));
+  buffer_put(&ss,num,uint0_fmt(num,tm.tm_hour,2));
   buffer_puts(&ss,":");
-  buffer_put(&ss,num,uint0_fmt(num,dt.min,2));
+  buffer_put(&ss,num,uint0_fmt(num,tm.tm_min,2));
   buffer_puts(&ss,":");
-  buffer_put(&ss,num,uint0_fmt(num,dt.sec,2));
+  buffer_put(&ss,num,uint0_fmt(num,tm.tm_sec,2));
 
   if (local < utc) {
     minutes = (utc - local + 30) / 60;
