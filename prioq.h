@@ -8,7 +8,7 @@
 #include "gen_alloc.h"
 */
 
-struct prioq_elt { tai dt; unsigned long id; } ;
+struct prioq_elt { tain dt; unsigned long id; } ;
 
 /* GEN_ALLOC_typedef(prioq,struct prioq_elt,p,len,a) */
 

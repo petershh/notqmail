@@ -20,7 +20,7 @@ int prioq_insert(genalloc *pq, struct prioq_elt *pe)
  genalloc_setlen(struct prioq_elt, pq, genalloc_len(struct prioq_elt, pq) + 1);
  while (j) {
    i = (j - 1)/2;
-   if (!tai_less(&pe->dt, &pq_arr[i].dt)) break;
+   if (!tain_less(&pe->dt, &pq_arr[i].dt)) break;
    pq_arr[j] = pq_arr[i];
    j = i;
  }
@@ -52,8 +52,8 @@ void prioq_delmin(genalloc *pq)
   {
    j = i + i + 2;
    if (j > n) break;
-   if (!tai_less(&pq_arr[j].dt, &pq_arr[j - 1].dt)) --j;
-   if (!tai_less(&pq_arr[j].dt, &pq_arr[n].dt)) break;
+   if (!tain_less(&pq_arr[j].dt, &pq_arr[j - 1].dt)) --j;
+   if (!tain_less(&pq_arr[j].dt, &pq_arr[n].dt)) break;
    pq_arr[i] = pq_arr[j];
    i = j;
   }

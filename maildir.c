@@ -41,10 +41,10 @@ void maildir_clean(stralloc *tmpname)
 {
  DIR *dir;
  direntry *d;
- tai time;
+ tain time;
  struct stat st;
 
- tai_now(&time);
+ tain_now(&time);
 
  dir = opendir("tmp");
  if (!dir) return;
@@ -56,19 +56,18 @@ void maildir_clean(stralloc *tmpname)
    if (!stralloc_cats(tmpname,d->d_name)) break;
    if (!stralloc_0(tmpname)) break;
    if (stat(tmpname->s,&st) == 0) {
-     tai delta, atime;
-     tai_uint(&delta, 129600);
+     tain atime;
 
-     tai_from_time(&atime, st.st_atime);
-     tai_add(&atime, &atime, &delta);
-     if (tai_less(&atime, &time))
+     tain_from_timespec_sysclock(&atime, &st.st_atim);
+     tain_addsec(&atime, &atime, 129600);
+     if (tain_less(&atime, &time))
        unlink(tmpname->s);
    }
   }
  closedir(dir);
 }
 
-static int append(genalloc *pq, stralloc *filenames, char *subdir, tai const *time)
+static int append(genalloc *pq, stralloc *filenames, char *subdir, tain const *time)
 {
  DIR *dir;
  direntry *d;
@@ -89,9 +88,9 @@ static int append(genalloc *pq, stralloc *filenames, char *subdir, tai const *ti
    if (!stralloc_cats(filenames,d->d_name)) break;
    if (!stralloc_0(filenames)) break;
    if (stat(filenames->s + pos,&st) == 0) {
-     tai mtime;
-     tai_from_time(&mtime, st.st_mtime);
-     if (tai_less(&mtime, time)) { /* don't want to mix up the order */
+     tain mtime;
+     tain_from_timespec_sysclock(&mtime, &st.st_mtim);
+     if (tain_less(&mtime, time)) { /* don't want to mix up the order */
        pe.dt = mtime;
        pe.id = pos;
        if (!prioq_insert(pq,&pe)) break;
@@ -107,12 +106,12 @@ static int append(genalloc *pq, stralloc *filenames, char *subdir, tai const *ti
 int maildir_scan(genalloc *pq, stralloc *filenames, int flagnew, int flagcur)
 {
  struct prioq_elt pe;
- tai time;
+ tain time;
 
  if (!stralloc_copys(filenames,"")) return 0;
  while (prioq_min(pq,&pe)) prioq_delmin(pq);
 
- tai_now(&time);
+ tain_now(&time);
 
  if (flagnew) if (append(pq,filenames,"new",&time) == -1) return -1;
  if (flagcur) if (append(pq,filenames,"cur",&time) == -1) return -1;
