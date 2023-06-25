@@ -1,11 +1,14 @@
 #ifndef PRIOQ_H
 #define PRIOQ_H
 
-#include "datetime.h"
+#include <skalibs/tai.h>
+
 /*
+#include "datetime.h"
 #include "gen_alloc.h"
 */
-struct prioq_elt { datetime_sec dt; unsigned long id; } ;
+
+struct prioq_elt { tai dt; unsigned long id; } ;
 
 /* GEN_ALLOC_typedef(prioq,struct prioq_elt,p,len,a) */
 

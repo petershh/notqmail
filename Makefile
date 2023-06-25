@@ -955,7 +955,7 @@ compile preline.c substdio.h wait.h
 	./compile preline.c
 
 prioq.o: \
-compile prioq.c prioq.h datetime.h
+compile prioq.c prioq.h
 	./compile prioq.c
 
 proc: \

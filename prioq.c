@@ -1,4 +1,5 @@
 #include <skalibs/genalloc.h>
+#include <skalibs/tai.h>
 
 #include "prioq.h"
 /*
@@ -13,17 +14,17 @@ int prioq_insert(genalloc *pq, struct prioq_elt *pe)
 {
  int i;
  int j;
- struct prioq_elt *pq_p = genalloc_s(struct prioq_elt, pq);
+ struct prioq_elt *pq_arr = genalloc_s(struct prioq_elt, pq);
  if (!genalloc_readyplus(struct prioq_elt,pq,1)) return 0;
- j = pq->len++;
- while (j)
-  {
+ j = genalloc_len(struct prioq_elt, pq);
+ genalloc_setlen(struct prioq_elt, pq, genalloc_len(struct prioq_elt, pq) + 1);
+ while (j) {
    i = (j - 1)/2;
-   if (pq_p[i].dt <= pe->dt) break;
-   pq_p[j] = pq_p[i];
+   if (!tai_less(&pe->dt, &pq_arr[i].dt)) break;
+   pq_arr[j] = pq_arr[i];
    j = i;
-  }
- pq_p[j] = *pe;
+ }
+ pq_arr[j] = *pe;
  return 1;
 }
 
@@ -41,8 +42,8 @@ void prioq_delmin(genalloc *pq)
  int i;
  int j;
  int n;
- struct prioq_elt *pq_p = genalloc_s(struct prioq_elt, pq);
- if (!pq_p) return;
+ struct prioq_elt *pq_arr = genalloc_s(struct prioq_elt, pq);
+ if (!pq_arr) return;
  n = genalloc_len(struct prioq_elt, pq);
  if (!n) return;
  i = 0;
@@ -51,11 +52,11 @@ void prioq_delmin(genalloc *pq)
   {
    j = i + i + 2;
    if (j > n) break;
-   if (pq_p[j - 1].dt <= pq_p[j].dt) --j;
-   if (pq_p[n].dt <= pq_p[j].dt) break;
-   pq_p[i] = pq_p[j];
+   if (!tai_less(&pq_arr[j].dt, &pq_arr[j - 1].dt)) --j;
+   if (!tai_less(&pq_arr[j].dt, &pq_arr[n].dt)) break;
+   pq_arr[i] = pq_arr[j];
    i = j;
   }
- pq_p[i] = pq_p[n];
+ pq_arr[i] = pq_arr[n];
  genalloc_setlen(struct prioq_elt, pq, n);
 }
