@@ -1414,10 +1414,8 @@ compile qmail-tcpok.c lock.h auto_qmail.h
 	./compile qmail-tcpok.c
 
 qmail-tcpto: \
-load qmail-tcpto.o ip.o open.a lock.a substdio.a error.a str.a \
-fs.a auto_qmail.o
-	./load qmail-tcpto ip.o open.a lock.a substdio.a \
-	error.a str.a fs.a auto_qmail.o 
+load qmail-tcpto.o lock.a auto_qmail.o
+	./load qmail-tcpto lock.a auto_qmail.o -lskarnet
 
 qmail-tcpto.0: \
 qmail-tcpto.8
