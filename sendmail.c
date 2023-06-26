@@ -1,85 +1,97 @@
+#include <unistd.h>
+
+#include <skalibs/sgetopt.h>
+#include <skalibs/buffer.h>
+#include <skalibs/alloc.h>
+#include <skalibs/env.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/stralloc.h>
+#include <skalibs/exec.h>
+
+/*
 #include "sgetopt.h"
 #include "substdio.h"
 #include "subfd.h"
 #include "alloc.h"
-#include "auto_qmail.h"
 #include "exit.h"
 #include "env.h"
-#include "noreturn.h"
 #include "str.h"
+*/
 
-void _noreturn_ nomem()
+#include "auto_qmail.h"
+#include "noreturn.h"
+
+void _noreturn_ nomem(void)
 {
-  substdio_putsflush(subfderr,"sendmail: fatal: out of memory\n");
+  buffer_putsflush(buffer_2,"sendmail: fatal: out of memory\n");
   _exit(111);
 }
 
-void _noreturn_ die_usage()
+void _noreturn_ die_usage(void)
 {
-  substdio_putsflush(subfderr,"sendmail: usage: sendmail [ -t ] [ -fsender ] [ -Fname ] [ -bp ] [ -bs ] [ arg ... ]\n");
+  buffer_putsflush(buffer_2,"sendmail: usage: sendmail [ -t ] [ -fsender ] [ -Fname ] [ -bp ] [ -bs ] [ arg ... ]\n");
   _exit(100);
 }
 
 char *smtpdarg[] = { "bin/qmail-smtpd", 0 };
-void _noreturn_ smtpd()
+void _noreturn_ smtpd(stralloc *env_modifs)
 {
   if (!env_get("PROTO")) {
-    if (!env_put("RELAYCLIENT=")) nomem();
-    if (!env_put("DATABYTES=0")) nomem();
-    if (!env_put("PROTO=TCP")) nomem();
-    if (!env_put("TCPLOCALIP=127.0.0.1")) nomem();
-    if (!env_put("TCPLOCALHOST=localhost")) nomem();
-    if (!env_put("TCPREMOTEIP=127.0.0.1")) nomem();
-    if (!env_put("TCPREMOTEHOST=localhost")) nomem();
-    if (!env_put("TCPREMOTEINFO=sendmail-bs")) nomem();
+    if (!env_addmodif(env_modifs, "RELAYCLIENT", "")) nomem();
+    if (!env_addmodif(env_modifs, "DATABYTES", "0")) nomem();
+    if (!env_addmodif(env_modifs, "PROTO", "TCP")) nomem();
+    if (!env_addmodif(env_modifs, "TCPLOCALIP", "127.0.0.1")) nomem();
+    if (!env_addmodif(env_modifs, "TCPLOCALHOST", "localhost")) nomem();
+    if (!env_addmodif(env_modifs, "TCPREMOTEIP", "127.0.0.1")) nomem();
+    if (!env_addmodif(env_modifs, "TCPREMOTEHOST", "localhost")) nomem();
+    if (!env_addmodif(env_modifs, "TCPREMOTEINFO", "sendmail-bs")) nomem();
   }
-  execv(*smtpdarg,smtpdarg);
-  substdio_putsflush(subfderr,"sendmail: fatal: unable to run qmail-smtpd\n");
+  mexec_m((char const *const *)smtpdarg, env_modifs->s, env_modifs->len);
+  buffer_putsflush(buffer_2,"sendmail: fatal: unable to run qmail-smtpd\n");
   _exit(111);
 }
 
 char *qreadarg[] = { "bin/qmail-qread", 0 };
-void _noreturn_ mailq()
+void _noreturn_ mailq(stralloc *env_modifs)
 {
-  execv(*qreadarg,qreadarg);
-  substdio_putsflush(subfderr,"sendmail: fatal: unable to run qmail-qread\n");
+  mexec_m((char const *const *)qreadarg, env_modifs->s, env_modifs->len);
+  buffer_putsflush(buffer_2,"sendmail: fatal: unable to run qmail-qread\n");
   _exit(111);
 }
 
-void do_sender(s)
-const char *s;
+void do_sender(const char *s, stralloc *env_modifs)
 {
   char *x;
   unsigned int n;
   unsigned int a;
   unsigned int i;
   
-  env_unset("QMAILNAME");
-  env_unset("MAILNAME");
-  env_unset("NAME");
-  env_unset("QMAILHOST");
-  env_unset("MAILHOST");
+  env_addmodif(env_modifs, "QMAILNAME", NULL);
+  env_addmodif(env_modifs, "MAILNAME", NULL);
+  env_addmodif(env_modifs, "NAME", NULL);
+  env_addmodif(env_modifs, "QMAILHOST", NULL);
+  env_addmodif(env_modifs, "MAILHOST", NULL);
 
   n = str_len(s);
   a = str_rchr(s, '@');
   if (a == n)
   {
-    env_put2("QMAILUSER", s);
+    env_addmodif(env_modifs, "QMAILUSER", s);
     return;
   }
-  env_put2("QMAILHOST", s + a + 1);
+  env_addmodif(env_modifs, "QMAILHOST", s + a + 1);
 
   x = (char *) alloc((a + 1) * sizeof(char));
   if (!x) nomem();
   for (i = 0; i < a; i++)
     x[i] = s[i];
   x[i] = 0;
-  env_put2("QMAILUSER", x);
+  env_addmodif(env_modifs, "QMAILUSER", x);
   alloc_free(x);
 }
 
 int flagh;
-char *sender;
+char const *sender;
 
 int main(int argc, char **argv)
 {
@@ -87,20 +99,24 @@ int main(int argc, char **argv)
   char **qiargv;
   char **arg;
   int i;
+  char const *progname = argv[0];
+  subgetopt l = SUBGETOPT_ZERO;
+  stralloc modifs = STRALLOC_ZERO;
  
   if (chdir(auto_qmail) == -1) {
-    substdio_putsflush(subfderr,"sendmail: fatal: unable to switch to qmail home directory\n");
+    buffer_putsflush(buffer_2,"sendmail: fatal: unable to switch to qmail home directory\n");
     return 111;
   }
 
   flagh = 0;
   sender = 0;
-  while ((opt = getopt(argc,argv,"vimte:f:p:o:B:F:EJxb:")) != opteof)
+  while ((opt = subgetopt_r(argc, (char const *const *)argv, 
+                  "vimte:f:p:o:B:F:EJxb:", &l)) != -1)
     switch(opt) {
       case 'B': break;
       case 't': flagh = 1; break;
-      case 'f': sender = optarg; break;
-      case 'F': if (!env_put2("MAILNAME",optarg)) nomem(); break;
+      case 'f': sender = l.arg; break;
+      case 'F': if (!env_addmodif(&modifs, "MAILNAME", l.arg)) nomem(); break;
       case 'p': break; /* could generate a Received line from optarg */
       case 'v': break;
       case 'i': break; /* what an absurd concept */
@@ -108,7 +124,7 @@ int main(int argc, char **argv)
       case 'm': break; /* twisted-paper-path blindness, incompetent design */
       case 'e': break; /* qmail has only one error mode */
       case 'o':
-        switch(optarg[0]) {
+        switch(l.arg[0]) {
 	  case 'd': break; /* qmail has only one delivery mode */
 	  case 'e': break; /* see 'e' above */
 	  case 'i': break; /* see 'i' above */
@@ -116,27 +132,27 @@ int main(int argc, char **argv)
 	}
         break;
       case 'E': case 'J': /* Sony NEWS-OS */
-        while (argv[optind][optpos]) ++optpos; /* skip optional argument */
+        while (argv[l.ind][l.pos]) ++l.pos; /* skip optional argument */
         break;
       case 'b':
 	switch(optarg[0]) {
 	  case 'm': break;
-	  case 'p': mailq();
-	  case 's': smtpd();
+	  case 'p': mailq(&modifs);
+	  case 's': smtpd(&modifs);
 	  default: die_usage();
 	}
 	break;
       default:
 	die_usage();
     }
-  argc -= optind;
-  argv += optind;
+  argc -= l.ind;
+  argv += l.ind;
  
-  if (str_equal(optprogname,"mailq"))
-    mailq();
+  if (str_equal(progname,"mailq"))
+    mailq(&modifs);
 
-  if (str_equal(optprogname,"newaliases")) {
-    substdio_putsflush(subfderr,"sendmail: fatal: please use fastforward/newaliases instead\n");
+  if (str_equal(progname,"newaliases")) {
+    buffer_putsflush(buffer_2,"sendmail: fatal: please use fastforward/newaliases instead\n");
     return 100;
   }
 
@@ -149,13 +165,13 @@ int main(int argc, char **argv)
   if (sender) {
     *arg++ = "-f";
     *arg++ = sender;
-    do_sender(sender);
+    do_sender(sender, &modifs);
   }
   *arg++ = "--";
   for (i = 0;i < argc;++i) *arg++ = argv[i];
   *arg = 0;
  
-  execv(*qiargv,qiargv);
-  substdio_putsflush(subfderr,"sendmail: fatal: unable to run qmail-inject\n");
+  mexec_m((char const *const *)qiargv, modifs.s, modifs.len);
+  buffer_putsflush(buffer_2,"sendmail: fatal: unable to run qmail-inject\n");
   return 111;
 }

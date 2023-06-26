@@ -1512,14 +1512,11 @@ compile trysysel.c select.h1 select.h2
 	rm -f trysysel.o trysysel
 
 sendmail: \
-load sendmail.o env.a getopt.a substdio.a error.a str.a \
-auto_qmail.o
-	./load sendmail env.a getopt.a substdio.a error.a \
-	str.a auto_qmail.o 
+load sendmail.o auto_qmail.o
+	./load sendmail auto_qmail.o -lskarnet
 
 sendmail.o: \
-compile sendmail.c sgetopt.h subgetopt.h substdio.h subfd.h \
-substdio.h alloc.h auto_qmail.h exit.h env.h str.h
+compile sendmail.c auto_qmail.h
 	./compile sendmail.c
 
 setup: \
