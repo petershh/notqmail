@@ -1455,20 +1455,16 @@ qmail.h auto_qmail.h env.h
 
 qreceipt: \
 load qreceipt.o headerbody.o hfield.o quote.o token822.o qmail.o \
-getln.a fd.a wait.a sig.a env.a stralloc.a substdio.a error.a \
-str.a auto_qmail.o
+getln.a auto_qmail.o
 	./load qreceipt headerbody.o hfield.o quote.o token822.o \
-	qmail.o getln.a fd.a wait.a sig.a env.a stralloc.a \
-	substdio.a error.a str.a auto_qmail.o 
+	qmail.o getln.a auto_qmail.o -lskarnet
 
 qreceipt.0: \
 qreceipt.1
 
 qreceipt.o: \
-compile qreceipt.c sig.h env.h substdio.h stralloc.h gen_alloc.h \
-subfd.h substdio.h getln.h alloc.h str.h hfield.h token822.h \
-gen_alloc.h error.h gen_alloc.h gen_allocdefs.h headerbody.h exit.h \
-open.h quote.h qmail.h substdio.h oflops.h error.h
+compile qreceipt.c getln.h hfield.h token822.h headerbody.h \
+quote.h qmail.h oflops.h
 	./compile qreceipt.c
 
 qsutil.o: \
