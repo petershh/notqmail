@@ -1,8 +1,16 @@
+#include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
+
+#include <skalibs/djbunix.h>
+
+/*
 #include "fd.h"
-#include "prot.h"
 #include "exit.h"
 #include "fork.h"
+*/
+
+#include "prot.h"
 #include "noreturn.h"
 #include "uidgid.h"
 #include "auto_uids.h"
@@ -31,9 +39,9 @@ uid_t auto_uids;
 gid_t auto_gidn;
 gid_t auto_gidq;
 
-void close23456() { close(2); close(3); close(4); close(5); close(6); }
+void close23456(void) { close(2); close(3); close(4); close(5); close(6); }
 
-void closepipes() {
+void closepipes(void) {
   close(pi1[0]); close(pi1[1]); close(pi2[0]); close(pi2[1]);
   close(pi3[0]); close(pi3[1]); close(pi4[0]); close(pi4[1]);
   close(pi5[0]); close(pi5[1]); close(pi6[0]); close(pi6[1]);
@@ -69,7 +77,7 @@ int main(int argc, char **argv)
     if (pipe(pi0) == -1) die();
     switch(fork()) {
       case -1:
-	die();
+        die();
       case 0:
         if (prot_gid(auto_gidn) == -1) die();
         if (prot_uid(auto_uidl) == -1) die();
@@ -77,7 +85,7 @@ int main(int argc, char **argv)
         if (fd_move(0,pi0[0]) == -1) die();
         close23456();
         execvp(argv[1],argv + 1);
-	die();
+        die();
     }
     close(pi0[0]);
     if (fd_move(1,pi0[1]) == -1) die();

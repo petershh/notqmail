@@ -1384,8 +1384,8 @@ exit.h rcpthosts.h timeoutread.h timeoutwrite.h commands.h
 	./compile qmail-smtpd.c
 
 qmail-start: \
-load qmail-start.o prot.o fd.a ids.a substdio.a error.a str.a
-	./load qmail-start prot.o fd.a ids.a substdio.a error.a str.a
+load qmail-start.o prot.o ids.a
+	./load qmail-start prot.o ids.a -lskarnet
 
 qmail-start.0: \
 qmail-start.8
@@ -1399,7 +1399,7 @@ qmail-start.9 conf-qmail conf-break conf-spawn
 	> qmail-start.8
 
 qmail-start.o: \
-compile qmail-start.c fd.h prot.h exit.h fork.h uidgid.h auto_uids.h auto_users.h
+compile qmail-start.c prot.h uidgid.h auto_uids.h auto_users.h
 	./compile qmail-start.c
 
 qmail-tcpok: \
