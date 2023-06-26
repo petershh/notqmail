@@ -1593,16 +1593,14 @@ compile chkspawn spawn.c auto_qmail.h auto_uids.h auto_spawn.h spawn.h
 	./compile spawn.c
 
 splogger: \
-load splogger.o substdio.a error.a str.a fs.a syslog.lib socket.lib
-	./load splogger substdio.a error.a str.a fs.a  `cat \
-	syslog.lib` `cat socket.lib`
+load splogger.o syslog.lib socket.lib
+	./load splogger `cat syslog.lib` `cat socket.lib` -lskarnet
 
 splogger.0: \
 splogger.8
 
 splogger.o: \
-compile splogger.c error.h substdio.h subfd.h substdio.h exit.h str.h \
-scan.h fmt.h
+compile splogger.c
 	./compile splogger.c
 
 str.a: \

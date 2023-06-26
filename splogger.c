@@ -1,6 +1,13 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <syslog.h>
+#include <unistd.h>
+
+#include <skalibs/buffer.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/types.h>
+
+/*
 #include "error.h"
 #include "substdio.h"
 #include "subfd.h"
@@ -8,26 +15,27 @@
 #include "str.h"
 #include "scan.h"
 #include "fmt.h"
+*/
 
 char buf[800]; /* syslog truncates long lines (or crashes); GPACIC */
 int bufpos = 0; /* 0 <= bufpos < sizeof(buf) */
 int flagcont = 0;
 int priority; /* defined if flagcont */
-char stamp[FMT_ULONG + FMT_ULONG + 3]; /* defined if flagcont */
+char stamp[ULONG_FMT + ULONG_FMT + 3]; /* defined if flagcont */
 
-void stamp_make()
+void stamp_make(void)
 {
   struct timeval tv;
   char *s;
   gettimeofday(&tv,NULL);
   s = stamp;
-  s += fmt_ulong(s,(unsigned long) tv.tv_sec);
+  s += ulong_fmt(s,(unsigned long) tv.tv_sec);
   *s++ = '.';
-  s += fmt_uint0(s,(unsigned int) tv.tv_usec,6);
+  s += uint0_fmt(s,(unsigned int) tv.tv_usec,6);
   *s = 0;
 }
 
-void flush()
+void flush(void)
 {
   if (bufpos) {
     buf[bufpos] = 0;
@@ -52,7 +60,7 @@ int main(int argc, char **argv)
   if (argc > 1)
     if (argc > 2) {
       unsigned long facility;
-      scan_ulong(argv[2],&facility);
+      ulong_scan(argv[2],&facility);
       openlog(argv[1],0,facility << 3);
     }
     else
@@ -61,7 +69,7 @@ int main(int argc, char **argv)
     openlog("splogger",0,LOG_MAIL);
 
   for (;;) {
-    if (substdio_get(subfdin,&ch,1) < 1) _exit(0);
+    if (buffer_get(buffer_0,&ch,1) < 1) _exit(0);
     if (ch == '\n') { flush(); flagcont = 0; continue; }
     if (bufpos == sizeof(buf) - 1) flush();
     if ((ch < 32) || (ch > 126)) ch = '?'; /* logger truncates at 0; GPACIC */
