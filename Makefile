@@ -1485,8 +1485,7 @@ open.h quote.h qmail.h substdio.h oflops.h error.h
 	./compile qreceipt.c
 
 qsutil.o: \
-compile qsutil.c stralloc.h gen_alloc.h readwrite.h substdio.h \
-qsutil.h
+compile qsutil.c qsutil.h
 	./compile qsutil.c
 
 qtmp.h: \

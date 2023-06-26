@@ -1,25 +1,32 @@
+#include <unistd.h>
+
+#include <skalibs/stralloc.h>
+#include <skalibs/buffer.h>
+
 #include "qsutil.h"
 
+/*
 #include "stralloc.h"
 #include "readwrite.h"
 #include "substdio.h"
+*/
 
-static stralloc foo = {0};
+static stralloc foo = STRALLOC_ZERO;
 
 static char errbuf[1];
-static struct substdio sserr = SUBSTDIO_FDBUF(write,0,errbuf,1);
+static buffer berr = BUFFER_INIT(buffer_write,0,errbuf,1);
 
-void logsa(sa) stralloc *sa; {
- substdio_putflush(&sserr,sa->s,sa->len); }
-void log1(s1) char *s1; {
- substdio_putsflush(&sserr,s1); }
+void logsa(stralloc *sa) {
+ buffer_putflush(&berr,sa->s,sa->len); }
+void log1(char *s1) {
+ buffer_putsflush(&berr,s1); }
 void qslog2(char *s1, char *s2) {
- substdio_putsflush(&sserr,s1);
- substdio_putsflush(&sserr,s2); }
-void log3(s1,s2,s3) char *s1; char *s2; char *s3; {
- substdio_putsflush(&sserr,s1);
- substdio_putsflush(&sserr,s2);
- substdio_putsflush(&sserr,s3); }
+ buffer_putsflush(&berr,s1);
+ buffer_putsflush(&berr,s2); }
+void log3(char *s1, char *s2, char *s3) {
+ buffer_putsflush(&berr,s1);
+ buffer_putsflush(&berr,s2);
+ buffer_putsflush(&berr,s3); }
 void nomem() { log1("alert: out of memory, sleeping...\n"); sleep(10); }
 
 void pausedir(dir) char *dir;
@@ -33,7 +40,7 @@ static int issafe(ch) char ch;
  return 1;
 }
 
-void logsafe(s) char *s;
+void logsafe(char *s)
 {
  int i;
  while (!stralloc_copys(&foo,s)) nomem();
