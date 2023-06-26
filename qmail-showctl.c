@@ -1,14 +1,26 @@
+#include <unistd.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#include <skalibs/buffer.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/direntry.h>
+#include <skalibs/stralloc.h>
+#include <skalibs/types.h>
+
+/*
 #include "substdio.h"
 #include "subfd.h"
 #include "exit.h"
 #include "fmt.h"
 #include "str.h"
-#include "control.h"
-#include "constmap.h"
 #include "stralloc.h"
 #include "direntry.h"
+*/
+
+#include "control.h"
+#include "constmap.h"
 #include "uidgid.h"
 #include "auto_uids.h"
 #include "auto_users.h"
@@ -18,11 +30,11 @@
 #include "auto_spawn.h"
 #include "auto_split.h"
 
-stralloc me = {0};
+stralloc me = STRALLOC_ZERO;
 int meok;
 
-stralloc line = {0};
-char num[FMT_ULONG];
+stralloc line = STRALLOC_ZERO;
+char num[ULONG_FMT];
 
 uid_t auto_uida;
 uid_t auto_uidd;
@@ -36,116 +48,102 @@ uid_t auto_uids;
 gid_t auto_gidn;
 gid_t auto_gidq;
 
-void safeput(buf,len)
-char *buf;
-unsigned int len;
+void safeput(char *buf, unsigned int len)
 {
   char ch;
 
   while (len > 0) {
     ch = *buf;
     if ((ch < 32) || (ch > 126)) ch = '?';
-    substdio_put(subfdout,&ch,1);
+    buffer_put(buffer_1,&ch,1);
     ++buf;
     --len;
   }
 }
 
-void do_int(fn,def,pre,post)
-char *fn;
-char *def;
-char *pre;
-char *post;
+void do_int(char *fn, char *def, char *pre, char *post)
 {
   int i;
-  substdio_puts(subfdout,"\n");
-  substdio_puts(subfdout,fn);
-  substdio_puts(subfdout,": ");
+  buffer_puts(buffer_1,"\n");
+  buffer_puts(buffer_1,fn);
+  buffer_puts(buffer_1,": ");
   switch(control_readint(&i,fn)) {
     case 0:
-      substdio_puts(subfdout,"(Default.) ");
-      substdio_puts(subfdout,pre);
-      substdio_puts(subfdout,def);
-      substdio_puts(subfdout,post);
-      substdio_puts(subfdout,".\n");
+      buffer_puts(buffer_1,"(Default.) ");
+      buffer_puts(buffer_1,pre);
+      buffer_puts(buffer_1,def);
+      buffer_puts(buffer_1,post);
+      buffer_puts(buffer_1,".\n");
       break;
     case 1:
       if (i < 0) i = 0;
-      substdio_puts(subfdout,pre);
-      substdio_put(subfdout,num,fmt_uint(num,i));
-      substdio_puts(subfdout,post);
-      substdio_puts(subfdout,".\n");
+      buffer_puts(buffer_1,pre);
+      buffer_put(buffer_1,num,uint_fmt(num,i));
+      buffer_puts(buffer_1,post);
+      buffer_puts(buffer_1,".\n");
       break;
     default:
-      substdio_puts(subfdout,"Oops! Trouble reading this file.\n");
+      buffer_puts(buffer_1,"Oops! Trouble reading this file.\n");
       break;
   }
 }
 
-void do_str(fn,flagme,def,pre)
-char *fn;
-int flagme;
-char *def;
-char *pre;
+void do_str(char *fn, int flagme, char *def, char *pre)
 {
-  substdio_puts(subfdout,"\n");
-  substdio_puts(subfdout,fn);
-  substdio_puts(subfdout,": ");
+  buffer_puts(buffer_1,"\n");
+  buffer_puts(buffer_1,fn);
+  buffer_puts(buffer_1,": ");
   switch(control_readline(&line,fn)) {
     case 0:
-      substdio_puts(subfdout,"(Default.) ");
+      buffer_puts(buffer_1,"(Default.) ");
       if (!stralloc_copys(&line,def)) {
-	substdio_puts(subfdout,"Oops! Out of memory.\n");
+	buffer_puts(buffer_1,"Oops! Out of memory.\n");
 	break;
       }
       if (flagme && meok)
 	if (!stralloc_copy(&line,&me)) {
-	  substdio_puts(subfdout,"Oops! Out of memory.\n");
+	  buffer_puts(buffer_1,"Oops! Out of memory.\n");
 	  break;
 	}
     case 1:
-      substdio_puts(subfdout,pre);
+      buffer_puts(buffer_1,pre);
       safeput(line.s,line.len);
-      substdio_puts(subfdout,".\n");
+      buffer_puts(buffer_1,".\n");
       break;
     default:
-      substdio_puts(subfdout,"Oops! Trouble reading this file.\n");
+      buffer_puts(buffer_1,"Oops! Trouble reading this file.\n");
       break;
   }
 }
 
-int do_lst(fn,def,pre,post)
-char *fn;
-char *def;
-char *pre;
-char *post;
+int do_lst(char *fn, char *def, char *pre, char *post)
 {
   int i;
   int j;
 
-  substdio_puts(subfdout,"\n");
-  substdio_puts(subfdout,fn);
-  substdio_puts(subfdout,": ");
+  buffer_puts(buffer_1,"\n");
+  buffer_puts(buffer_1,fn);
+  buffer_puts(buffer_1,": ");
   switch(control_readfile(&line,fn,0)) {
     case 0:
-      substdio_puts(subfdout,"(Default.) ");
-      substdio_puts(subfdout,def);
-      substdio_puts(subfdout,"\n");
+      buffer_puts(buffer_1,"(Default.) ");
+      buffer_puts(buffer_1,def);
+      buffer_puts(buffer_1,"\n");
       return 0;
     case 1:
-      substdio_puts(subfdout,"\n");
+      buffer_puts(buffer_1,"\n");
       i = 0;
       for (j = 0;j < line.len;++j)
 	if (!line.s[j]) {
-          substdio_puts(subfdout,pre);
+          buffer_puts(buffer_1,pre);
           safeput(line.s + i,j - i);
-          substdio_puts(subfdout,post);
-          substdio_puts(subfdout,"\n");
+          buffer_puts(buffer_1,post);
+          buffer_puts(buffer_1,"\n");
 	  i = j + 1;
 	}
       return 1;
     default:
-      substdio_puts(subfdout,"Oops! Trouble reading this file.\n");
+      buffer_puts(buffer_1,"Oops! Trouble reading this file.\n");
       return -1;
   }
 }
@@ -169,74 +167,74 @@ int main(void)
   auto_gidn = initgid(auto_groupn);
   auto_gidq = initgid(auto_groupq);
 
-  substdio_puts(subfdout,"qmail home directory: ");
-  substdio_puts(subfdout,auto_qmail);
-  substdio_puts(subfdout,".\n");
+  buffer_puts(buffer_1,"qmail home directory: ");
+  buffer_puts(buffer_1,auto_qmail);
+  buffer_puts(buffer_1,".\n");
 
-  substdio_puts(subfdout,"user-ext delimiter: ");
-  substdio_puts(subfdout,auto_break);
-  substdio_puts(subfdout,".\n");
+  buffer_puts(buffer_1,"user-ext delimiter: ");
+  buffer_puts(buffer_1,auto_break);
+  buffer_puts(buffer_1,".\n");
 
-  substdio_puts(subfdout,"paternalism (in decimal): ");
-  substdio_put(subfdout,num,fmt_ulong(num,(unsigned long) auto_patrn));
-  substdio_puts(subfdout,".\n");
+  buffer_puts(buffer_1,"paternalism (in decimal): ");
+  buffer_put(buffer_1,num,ulong_fmt(num,(unsigned long) auto_patrn));
+  buffer_puts(buffer_1,".\n");
 
-  substdio_puts(subfdout,"silent concurrency limit: ");
-  substdio_put(subfdout,num,fmt_ulong(num,(unsigned long) auto_spawn));
-  substdio_puts(subfdout,".\n");
+  buffer_puts(buffer_1,"silent concurrency limit: ");
+  buffer_put(buffer_1,num,ulong_fmt(num,(unsigned long) auto_spawn));
+  buffer_puts(buffer_1,".\n");
 
-  substdio_puts(subfdout,"subdirectory split: ");
-  substdio_put(subfdout,num,fmt_ulong(num,(unsigned long) auto_split));
-  substdio_puts(subfdout,".\n");
+  buffer_puts(buffer_1,"subdirectory split: ");
+  buffer_put(buffer_1,num,ulong_fmt(num,(unsigned long) auto_split));
+  buffer_puts(buffer_1,".\n");
 
-  substdio_puts(subfdout,"user ids: ");
-  substdio_put(subfdout,num,fmt_ulong(num,(unsigned long) auto_uida));
-  substdio_puts(subfdout,", ");
-  substdio_put(subfdout,num,fmt_ulong(num,(unsigned long) auto_uidd));
-  substdio_puts(subfdout,", ");
-  substdio_put(subfdout,num,fmt_ulong(num,(unsigned long) auto_uidl));
-  substdio_puts(subfdout,", ");
-  substdio_put(subfdout,num,fmt_ulong(num,(unsigned long) auto_uido));
-  substdio_puts(subfdout,", ");
-  substdio_put(subfdout,num,fmt_ulong(num,(unsigned long) auto_uidp));
-  substdio_puts(subfdout,", ");
-  substdio_put(subfdout,num,fmt_ulong(num,(unsigned long) auto_uidq));
-  substdio_puts(subfdout,", ");
-  substdio_put(subfdout,num,fmt_ulong(num,(unsigned long) auto_uidr));
-  substdio_puts(subfdout,", ");
-  substdio_put(subfdout,num,fmt_ulong(num,(unsigned long) auto_uids));
-  substdio_puts(subfdout,".\n");
+  buffer_puts(buffer_1,"user ids: ");
+  buffer_put(buffer_1,num,ulong_fmt(num,(unsigned long) auto_uida));
+  buffer_puts(buffer_1,", ");
+  buffer_put(buffer_1,num,ulong_fmt(num,(unsigned long) auto_uidd));
+  buffer_puts(buffer_1,", ");
+  buffer_put(buffer_1,num,ulong_fmt(num,(unsigned long) auto_uidl));
+  buffer_puts(buffer_1,", ");
+  buffer_put(buffer_1,num,ulong_fmt(num,(unsigned long) auto_uido));
+  buffer_puts(buffer_1,", ");
+  buffer_put(buffer_1,num,ulong_fmt(num,(unsigned long) auto_uidp));
+  buffer_puts(buffer_1,", ");
+  buffer_put(buffer_1,num,ulong_fmt(num,(unsigned long) auto_uidq));
+  buffer_puts(buffer_1,", ");
+  buffer_put(buffer_1,num,ulong_fmt(num,(unsigned long) auto_uidr));
+  buffer_puts(buffer_1,", ");
+  buffer_put(buffer_1,num,ulong_fmt(num,(unsigned long) auto_uids));
+  buffer_puts(buffer_1,".\n");
 
-  substdio_puts(subfdout,"group ids: ");
-  substdio_put(subfdout,num,fmt_ulong(num,(unsigned long) auto_gidn));
-  substdio_puts(subfdout,", ");
-  substdio_put(subfdout,num,fmt_ulong(num,(unsigned long) auto_gidq));
-  substdio_puts(subfdout,".\n");
+  buffer_puts(buffer_1,"group ids: ");
+  buffer_put(buffer_1,num,ulong_fmt(num,(unsigned long) auto_gidn));
+  buffer_puts(buffer_1,", ");
+  buffer_put(buffer_1,num,ulong_fmt(num,(unsigned long) auto_gidq));
+  buffer_puts(buffer_1,".\n");
 
   if (chdir(auto_qmail) == -1) {
-    substdio_puts(subfdout,"Oops! Unable to chdir to ");
-    substdio_puts(subfdout,auto_qmail);
-    substdio_puts(subfdout,".\n");
-    substdio_flush(subfdout);
+    buffer_puts(buffer_1,"Oops! Unable to chdir to ");
+    buffer_puts(buffer_1,auto_qmail);
+    buffer_puts(buffer_1,".\n");
+    buffer_flush(buffer_1);
     _exit(111);
   }
   if (chdir("control") == -1) {
-    substdio_puts(subfdout,"Oops! Unable to chdir to control.\n");
-    substdio_flush(subfdout);
+    buffer_puts(buffer_1,"Oops! Unable to chdir to control.\n");
+    buffer_flush(buffer_1);
     _exit(111);
   }
 
   dir = opendir(".");
   if (!dir) {
-    substdio_puts(subfdout,"Oops! Unable to open current directory.\n");
-    substdio_flush(subfdout);
+    buffer_puts(buffer_1,"Oops! Unable to open current directory.\n");
+    buffer_flush(buffer_1);
     _exit(111);
   }
 
   meok = control_readline(&me,"me");
   if (meok == -1) {
-    substdio_puts(subfdout,"Oops! Trouble reading control/me.");
-    substdio_flush(subfdout);
+    buffer_puts(buffer_1,"Oops! Trouble reading control/me.");
+    buffer_flush(buffer_1);
     _exit(111);
   }
 
@@ -266,20 +264,20 @@ int main(void)
   else
     do_lst("morercpthosts","No rcpthosts; morercpthosts is irrelevant.","No rcpthosts; doesn't matter that morercpthosts has ",".");
   /* XXX: check morercpthosts.cdb contents */
-  substdio_puts(subfdout,"\nmorercpthosts.cdb: ");
+  buffer_puts(buffer_1,"\nmorercpthosts.cdb: ");
   if (stat("morercpthosts",&stmrh) == -1)
     if (stat("morercpthosts.cdb",&stmrhcdb) == -1)
-      substdio_puts(subfdout,"(Default.) No effect.\n");
+      buffer_puts(buffer_1,"(Default.) No effect.\n");
     else
-      substdio_puts(subfdout,"Oops! morercpthosts.cdb exists but morercpthosts doesn't.\n");
+      buffer_puts(buffer_1,"Oops! morercpthosts.cdb exists but morercpthosts doesn't.\n");
   else
     if (stat("morercpthosts.cdb",&stmrhcdb) == -1)
-      substdio_puts(subfdout,"Oops! morercpthosts exists but morercpthosts.cdb doesn't.\n");
+      buffer_puts(buffer_1,"Oops! morercpthosts exists but morercpthosts.cdb doesn't.\n");
     else
       if (stmrh.st_mtime > stmrhcdb.st_mtime)
-        substdio_puts(subfdout,"Oops! morercpthosts.cdb is older than morercpthosts.\n");
+        buffer_puts(buffer_1,"Oops! morercpthosts.cdb is older than morercpthosts.\n");
       else
-        substdio_puts(subfdout,"Modified recently enough; hopefully up to date.\n");
+        buffer_puts(buffer_1,"Modified recently enough; hopefully up to date.\n");
 
   do_str("smtpgreeting",1,"smtpgreeting","SMTP greeting: 220 ");
   do_lst("smtproutes","No artificial SMTP routes.","SMTP route: ","");
@@ -322,11 +320,11 @@ int main(void)
     if (str_equal(d->d_name,"timeoutremote")) continue;
     if (str_equal(d->d_name,"timeoutsmtpd")) continue;
     if (str_equal(d->d_name,"virtualdomains")) continue;
-    substdio_puts(subfdout,"\n");
-    substdio_puts(subfdout,d->d_name);
-    substdio_puts(subfdout,": I have no idea what this file does.\n");
+    buffer_puts(buffer_1,"\n");
+    buffer_puts(buffer_1,d->d_name);
+    buffer_puts(buffer_1,": I have no idea what this file does.\n");
   }
 
-  substdio_flush(subfdout);
+  buffer_flush(buffer_1);
   _exit(0);
 }

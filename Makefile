@@ -1344,19 +1344,17 @@ qmail-send.service.in conf-qmail
 	> qmail-send.service
 
 qmail-showctl: \
-load qmail-showctl.o control.o open.a getln.a stralloc.a \
-substdio.a error.a ids.a str.a fs.a auto_qmail.o auto_break.o auto_patrn.o \
+load qmail-showctl.o control.o getln.a \
+ids.a auto_qmail.o auto_break.o auto_patrn.o \
 auto_spawn.o auto_split.o
-	./load qmail-showctl control.o open.a getln.a ids.a \
-	stralloc.a substdio.a error.a str.a fs.a auto_qmail.o \
-	auto_break.o auto_patrn.o auto_spawn.o auto_split.o
+	./load qmail-showctl control.o getln.a ids.a auto_qmail.o \
+	auto_break.o auto_patrn.o auto_spawn.o auto_split.o -lskarnet
 
 qmail-showctl.0: \
 qmail-showctl.8
 
 qmail-showctl.o: \
-compile qmail-showctl.c substdio.h subfd.h substdio.h exit.h fmt.h \
-str.h control.h constmap.h stralloc.h gen_alloc.h direntry.h uidgid.h \
+compile qmail-showctl.c control.h constmap.h uidgid.h \
 auto_uids.h auto_users.h auto_qmail.h auto_break.h auto_patrn.h \
 auto_spawn.h auto_split.h
 	./compile qmail-showctl.c
