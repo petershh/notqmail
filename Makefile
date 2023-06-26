@@ -1314,14 +1314,11 @@ compile qmail-rspawn.c wait.h tcpto.h spawn.h
 qmail-send: \
 load qmail-send.o qsutil.o control.o constmap.o newfield.o prioq.o \
 trigger.o fmtqfn.o quote.o readsubdir.o qmail.o date822fmt.o \
-datetime.a case.a ndelay.a getln.a wait.a fd.a sig.a open.a \
-lock.a stralloc.a substdio.a error.a str.a fs.a auto_qmail.o \
-auto_split.o env.a
+getln.a lock.a fs.a auto_qmail.o auto_split.o
 	./load qmail-send qsutil.o control.o constmap.o newfield.o \
-	prioq.o trigger.o fmtqfn.o quote.o readsubdir.o \
-	qmail.o date822fmt.o datetime.a case.a ndelay.a getln.a \
-	wait.a fd.a sig.a open.a lock.a stralloc.a \
-	substdio.a error.a str.a fs.a auto_qmail.o auto_split.o env.a
+	prioq.o trigger.o fmtqfn.o quote.o readsubdir.o qmail.o \
+	date822fmt.o getln.a lock.a fs.a auto_qmail.o auto_split.o \
+	-lskarnet
 
 qmail-send.0: \
 qmail-send.8
@@ -1335,12 +1332,9 @@ qmail-send.9 conf-qmail conf-break conf-spawn
 	> qmail-send.8
 
 qmail-send.o: \
-compile qmail-send.c readwrite.h sig.h direntry.h control.h select.h \
-open.h seek.h exit.h lock.h ndelay.h now.h datetime.h getln.h \
-substdio.h alloc.h error.h stralloc.h gen_alloc.h str.h byte.h fmt.h \
-scan.h case.h auto_qmail.h trigger.h newfield.h stralloc.h quote.h \
-qmail.h substdio.h qsutil.h prioq.h datetime.h gen_alloc.h constmap.h \
-fmtqfn.h readsubdir.h direntry.h
+compile qmail-send.c control.h lock.h getln.h \
+auto_qmail.h trigger.h newfield.h quote.h \
+qmail.h qsutil.h prioq.h constmap.h fmtqfn.h readsubdir.h
 	./compile qmail-send.c
 
 qmail-send.service: \
