@@ -1,21 +1,33 @@
-#include "remoteinfo.h"
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <fcntl.h>
 #include <unistd.h>
+
+#include <skalibs/ip46.h>
+#include <skalibs/buffer.h>
+#include <skalibs/socket.h>
+#include <skalibs/tai.h>
+#include <skalibs/types.h>
+#include <skalibs/unix-timed.h>
+#include <skalibs/djbunix.h>
+
+#include "remoteinfo.h"
+
+/*
 #include "byte.h"
 #include "substdio.h"
 #include "ip.h"
-#include "fmt.h"
 #include "timeoutconn.h"
 #include "timeoutread.h"
 #include "timeoutwrite.h"
+*/
+
+#include "fmt.h"
 
 static char line[999];
 static int t;
 
+/*
 static ssize_t mywrite(int fd, const void *buf, size_t len)
 {
   return timeoutwrite(t,fd,buf,len);
@@ -24,50 +36,63 @@ static ssize_t myread(int fd, void *buf, size_t len)
 {
   return timeoutread(t,fd,buf,len);
 }
+*/
 
-char *remoteinfo_get(ipr,rp,ipl,lp,timeout)
-struct ip_address *ipr;
-unsigned long rp;
-struct ip_address *ipl;
-unsigned long lp;
-int timeout;
+char *remoteinfo_get(ip46 *ipr, unsigned long rp, ip46 *ipl, unsigned long lp,
+        int timeout)
 {
   char *x;
   int s;
-  struct sockaddr_in sin;
-  substdio ss;
+  buffer b;
   char buf[32];
   unsigned int len;
   int numcolons;
   char ch;
+  tain now, deadline;
 
   t = timeout;
  
-  s = socket(AF_INET,SOCK_STREAM,0);
+  s = socket_tcp4();
   if (s == -1) return 0;
  
-  byte_zero(&sin,sizeof(sin));
-  sin.sin_family = AF_INET;
-  byte_copy(&sin.sin_addr,4,ipl);
-  sin.sin_port = 0;
-  if (bind(s,(struct sockaddr *) &sin,sizeof(sin)) == -1) { close(s); return 0; }
-  if (timeoutconn(s,ipr,113,timeout) == -1) { close(s); return 0; }
-  fcntl(s,F_SETFL,fcntl(s,F_GETFL,0) & ~O_NDELAY);
+  if (socket_bind46(s, ipl, 0) == -1) {
+    close(s);
+    return 0;
+  }
+  /* TODO: this api should be deadline-based in the first place */
+  tain_now(&now);
+  tain_addsec(&deadline, &now, t);
+  if (socket_deadlineconnstamp46(s, ipr, 113, &deadline, &now) == -1) {
+    close(s);
+    return 0;
+  }
+  ndelay_off(s);
  
   len = 0;
-  len += fmt_ulong(line + len,rp);
+  len += ulong_fmt(line + len,rp);
   len += fmt_str(line + len," , ");
-  len += fmt_ulong(line + len,lp);
+  len += ulong_fmt(line + len,lp);
   len += fmt_str(line + len,"\r\n");
  
-  substdio_fdbuf(&ss,mywrite,s,buf,sizeof(buf));
-  if (substdio_putflush(&ss,line,len) == -1) { close(s); return 0; }
+  buffer_init(&b,buffer_write,s,buf,sizeof(buf));
+  if (buffer_timed_put(&b, line, len, &deadline, &now)) {
+    close(s);
+    return 0;
+  }
+  if (buffer_timed_flush(&b, &deadline, &now) != 1) {
+    close(s);
+    return 0;
+  }
  
-  substdio_fdbuf(&ss,myread,s,buf,sizeof(buf));
+  buffer_init(&b,buffer_read,s,buf,sizeof(buf));
   x = line;
   numcolons = 0;
   for (;;) {
-    if (substdio_get(&ss,&ch,1) != 1) { close(s); return 0; }
+    tain_addsec(&deadline, &now, t);
+    if (buffer_timed_get(&b, &ch, 1, &deadline, &now) != 1) {
+      close(s);
+      return 0;
+    }
     if ((ch == ' ') || (ch == '\t') || (ch == '\r')) continue;
     if (ch == '\n') break;
     if (numcolons < 3) { if (ch == ':') ++numcolons; }

@@ -1494,8 +1494,7 @@ compile received.c qmail.h date822fmt.h received.h
 	./compile received.c
 
 remoteinfo.o: \
-compile remoteinfo.c byte.h substdio.h ip.h fmt.h timeoutconn.h \
-timeoutread.h timeoutwrite.h remoteinfo.h
+compile remoteinfo.c fmt.h remoteinfo.h
 	./compile remoteinfo.c
 
 scan_8long.o: \
