@@ -1,12 +1,21 @@
+#include <time.h>
+
+#include <skalibs/tai.h>
+#include <skalibs/types.h>
+#include <skalibs/djbtime.h>
+
 #include "received.h"
 
+/*
 #include "fmt.h"
-#include "qmail.h"
 #include "now.h"
 #include "datetime.h"
+*/
+
+#include "qmail.h"
 #include "date822fmt.h"
 
-static int issafe(ch) char ch;
+static int issafe(char ch)
 {
   if (ch == '.') return 1;
   if (ch == '@') return 1;
@@ -24,9 +33,7 @@ static int issafe(ch) char ch;
   return 0;
 }
 
-void safeput(qqt,s)
-struct qmail *qqt;
-char *s;
+void safeput(struct qmail *qqt, char *s)
 {
   char ch;
   while ((ch = *s++)) {
@@ -40,16 +47,11 @@ static char buf[DATE822FMT];
 /* "Received: from relay1.uu.net (HELO uunet.uu.net) (7@192.48.96.5)\n" */
 /* "  by silverton.berkeley.edu with SMTP; 26 Sep 1995 04:46:54 -0000\n" */
 
-void received(qqt,protocol,local,remoteip,remotehost,remoteinfo,helo)
-struct qmail *qqt;
-char *protocol;
-char *local;
-char *remoteip;
-char *remotehost;
-char *remoteinfo;
-char *helo;
+void received(struct qmail *qqt, char *protocol, char *local, char *remoteip,
+        char *remotehost, char *remoteinfo, char *helo)
 {
-  struct datetime dt;
+  struct tm dt;
+  tai now;
 
   qmail_puts(qqt,"Received: from ");
   safeput(qqt,remotehost);
@@ -69,6 +71,7 @@ char *helo;
   qmail_puts(qqt," with ");
   qmail_puts(qqt,protocol);
   qmail_puts(qqt,"; ");
-  datetime_tai(&dt,now());
+  tai_now(&now);
+  localtm_from_tai(&dt, &now, 0);
   qmail_put(qqt,buf,date822fmt(buf,&dt));
 }

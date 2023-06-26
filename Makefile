@@ -1490,8 +1490,7 @@ compile readsubdir.c readsubdir.h fmt.h auto_split.h
 	./compile readsubdir.c
 
 received.o: \
-compile received.c fmt.h qmail.h substdio.h now.h datetime.h \
-datetime.h date822fmt.h received.h
+compile received.c qmail.h date822fmt.h received.h
 	./compile received.c
 
 remoteinfo.o: \
