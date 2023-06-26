@@ -1403,17 +1403,14 @@ compile qmail-start.c prot.h uidgid.h auto_uids.h auto_users.h
 	./compile qmail-start.c
 
 qmail-tcpok: \
-load qmail-tcpok.o open.a lock.a strerr.a substdio.a error.a str.a \
-auto_qmail.o
-	./load qmail-tcpok open.a lock.a strerr.a substdio.a \
-	error.a str.a auto_qmail.o 
+load qmail-tcpok.o lock.a auto_qmail.o
+	./load qmail-tcpok lock.a auto_qmail.o -lskarnet
 
 qmail-tcpok.0: \
 qmail-tcpok.8
 
 qmail-tcpok.o: \
-compile qmail-tcpok.c strerr.h substdio.h lock.h open.h readwrite.h \
-auto_qmail.h
+compile qmail-tcpok.c lock.h auto_qmail.h
 	./compile qmail-tcpok.c
 
 qmail-tcpto: \
