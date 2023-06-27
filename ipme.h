@@ -2,6 +2,7 @@
 #define IPME_H
 
 #include <skalibs/ip46.h>
+#include <skalibs/genalloc.h>
 /*
 #include "ip.h"
 */
