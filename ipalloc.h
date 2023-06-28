@@ -7,6 +7,8 @@
 */
 struct ip_mx { ip46 ip; int pref; } ;
 
+#define IP_MX_ZERO { IP46_ZERO, 0 }
+
 /*
 #include "gen_alloc.h"
 
