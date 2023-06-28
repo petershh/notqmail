@@ -1276,26 +1276,17 @@ auto_uids.h auto_users.h date822fmt.h fmtqfn.h
 	./compile qmail-queue.c
 
 qmail-remote: \
-load qmail-remote.o control.o constmap.o timeoutread.o timeoutwrite.o \
-timeoutconn.o tcpto.o dns.o ip.o ipalloc.o ipme.o quote.o \
-ndelay.a case.a sig.a open.a lock.a getln.a stralloc.a \
-substdio.a error.a str.a fs.a auto_qmail.o dns.lib socket.lib
-	./load qmail-remote control.o constmap.o timeoutread.o \
-	timeoutwrite.o timeoutconn.o tcpto.o dns.o ip.o \
-	ipalloc.o ipme.o quote.o ndelay.a case.a sig.a open.a \
-	lock.a getln.a stralloc.a substdio.a error.a \
-	str.a fs.a auto_qmail.o  `cat dns.lib` `cat socket.lib`
+load qmail-remote.o control.o constmap.o tcpto.o ipme.o \
+quote.o lock.a getln.a auto_qmail.o socket.lib
+	./load qmail-remote control.o constmap.o tcpto.o \
+	ipme.o quote.o lock.a getln.a auto_qmail.o \
+	-ls6dns -lskarnet `cat socket.lib`
 
 qmail-remote.0: \
 qmail-remote.8
 
 qmail-remote.o: \
-compile qmail-remote.c sig.h stralloc.h gen_alloc.h substdio.h \
-subfd.h substdio.h scan.h case.h error.h auto_qmail.h control.h dns.h \
-alloc.h quote.h ip.h ipalloc.h ip.h gen_alloc.h ipme.h ip.h ipalloc.h \
-gen_alloc.h gen_allocdefs.h str.h now.h datetime.h exit.h constmap.h \
-tcpto.h readwrite.h timeoutconn.h timeoutread.h timeoutwrite.h oflops.h \
-error.h
+compile qmail-remote.c auto_qmail.h ipalloc.h tcpto.h oflops.h
 	./compile qmail-remote.c
 
 qmail-rspawn: \
