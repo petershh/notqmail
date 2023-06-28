@@ -1131,22 +1131,16 @@ compile qmail-newu.c getln.h auto_qmail.h
 	./compile qmail-newu.c
 
 qmail-pop3d: \
-load qmail-pop3d.o commands.o case.a timeoutread.o timeoutwrite.o \
-maildir.o prioq.o env.a strerr.a sig.a open.a getln.a \
-stralloc.a substdio.a error.a str.a fs.a socket.lib
-	./load qmail-pop3d commands.o case.a timeoutread.o \
-	timeoutwrite.o maildir.o prioq.o env.a strerr.a sig.a \
-	open.a getln.a stralloc.a substdio.a error.a str.a \
-	fs.a  `cat socket.lib`
+load qmail-pop3d.o commands.o maildir.o prioq.o getln.a strerr.a \
+socket.lib
+	./load qmail-pop3d commands.o maildir.o prioq.o getln.a strerr.a \
+	`cat socket.lib` -lskarnet
 
 qmail-pop3d.0: \
 qmail-pop3d.8
 
 qmail-pop3d.o: \
-compile qmail-pop3d.c commands.h sig.h getln.h stralloc.h gen_alloc.h \
-substdio.h alloc.h open.h prioq.h datetime.h gen_alloc.h scan.h fmt.h \
-str.h exit.h maildir.h strerr.h readwrite.h timeoutread.h \
-timeoutwrite.h
+compile qmail-pop3d.c commands.h getln.h prioq.h maildir.h
 	./compile qmail-pop3d.c
 
 qmail-popup: \

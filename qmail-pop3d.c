@@ -2,96 +2,131 @@
 #include <sys/stat.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
-#include "commands.h"
+#include <signal.h>
+
+#include <skalibs/sig.h>
+#include <skalibs/stralloc.h>
+#include <skalibs/buffer.h>
+#include <skalibs/alloc.h>
+#include <skalibs/types.h>
+#include <skalibs/djbunix.h>
+#include <skalibs/tai.h>
+#include <skalibs/genalloc.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/unix-timed.h>
+
+/*
 #include "sig.h"
-#include "getln.h"
 #include "stralloc.h"
 #include "substdio.h"
 #include "alloc.h"
 #include "open.h"
-#include "prioq.h"
 #include "scan.h"
 #include "fmt.h"
 #include "str.h"
 #include "exit.h"
-#include "maildir.h"
 #include "readwrite.h"
 #include "timeoutread.h"
 #include "timeoutwrite.h"
+*/
+
+#include "commands.h"
+#include "getln.h"
+#include "prioq.h"
+#include "maildir.h"
 
 void die() { _exit(0); }
 
-extern int rename(const char *, const char *);
-
+/*
 GEN_SAFE_TIMEOUTREAD(saferead,1200,fd,die())
 GEN_SAFE_TIMEOUTWRITE(safewrite,1200,fd,die())
+*/
 
-char sserrbuf[128];
-substdio sserr = SUBSTDIO_FDBUF(safewrite,2,sserrbuf,sizeof(sserrbuf));
+char berrbuf[128]; /* TODO does it need to be used with unix-timed? */
+buffer berr = BUFFER_INIT(buffer_write,2,berrbuf,sizeof(berrbuf));
 
-char ssoutbuf[1024];
-substdio ssout = SUBSTDIO_FDBUF(safewrite,1,ssoutbuf,sizeof(ssoutbuf));
+char boutbuf[1024];
+buffer bout = BUFFER_INIT(buffer_write,1,boutbuf,sizeof(boutbuf));
 
-char ssinbuf[128];
-substdio ssin = SUBSTDIO_FDBUF(saferead,0,ssinbuf,sizeof(ssinbuf));
+char binbuf[128];
+buffer bin = BUFFER_INIT(buffer_read,0,binbuf,sizeof(binbuf));
 
-void put(buf,len) char *buf; int len;
+void put(char *buf, int len)
 {
-  substdio_put(&ssout,buf,len);
+  tain now, deadline;
+  tain_now(&now);
+  tain_addsec(&deadline, &now, 1200);
+  if (buffer_timed_put(&bout, buf, len, &deadline, &now) <= 0)
+    die();
 }
-void puts(s) char *s;
+void timed_puts(char *s)
 {
-  substdio_puts(&ssout,s);
+  tain now, deadline;
+  tain_now(&now);
+  tain_addsec(&deadline, &now, 1200);
+  if (buffer_timed_puts(&bout, s, &deadline, &now) <= 0)
+    die();
 }
-void flush()
+void flush(void)
 {
-  substdio_flush(&ssout);
+  tain now, deadline;
+  tain_now(&now);
+  tain_addsec(&deadline, &now, 1200);
+  if (buffer_timed_flush(&bout, &deadline, &now) <= 0)
+    die();
 }
-void err(s) char *s;
+void err(char *s)
 {
-  puts("-ERR ");
-  puts(s);
-  puts("\r\n");
+  timed_puts("-ERR ");
+  timed_puts(s);
+  timed_puts("\r\n");
   flush();
 }
 
-void die_nomem() { err("out of memory"); die(); }
-void die_nomaildir() { err("this user has no $HOME/Maildir"); die(); }
-void die_root() {
-  substdio_putsflush(&sserr,"qmail-pop3d invoked as uid 0, terminating\n");
+void die_nomem(void) { err("out of memory"); die(); }
+void die_nomaildir(void) { err("this user has no $HOME/Maildir"); die(); }
+
+void die_root(void)
+{
+  tain now, deadline;
+  tain_now(&now);
+  tain_addsec(&deadline, &now, 1200);
+  buffer_timed_puts(&berr, "qmail-pop3d invoked as uid 0, terminating\n",
+      &deadline, &now);
+  buffer_timed_flush(&berr, &deadline, &now);
   _exit(1);
 }
-void die_scan() { err("unable to scan $HOME/Maildir"); die(); }
 
-void err_syntax() { err("syntax error"); }
-void err_unimpl(arg) char *arg; { err("unimplemented"); }
-void err_deleted() { err("already deleted"); }
-void err_nozero() { err("messages are counted from 1"); }
-void err_toobig() { err("not that many messages"); }
-void err_nosuch() { err("unable to open that message"); }
-void err_nounlink() { err("unable to unlink all deleted messages"); }
+void die_scan(void) { err("unable to scan $HOME/Maildir"); die(); }
 
-void okay(arg) char *arg; { puts("+OK \r\n"); flush(); }
+void err_syntax(void) { err("syntax error"); }
+void err_unimpl(char *arg) { err("unimplemented"); }
+void err_deleted(void) { err("already deleted"); }
+void err_nozero(void) { err("messages are counted from 1"); }
+void err_toobig(void) { err("not that many messages"); }
+void err_nosuch(void) { err("unable to open that message"); }
+void err_nounlink(void) { err("unable to unlink all deleted messages"); }
 
-void printfn(fn) char *fn;
+void okay(char *arg) { timed_puts("+OK \r\n"); flush(); }
+
+void printfn(char *fn)
 {
   fn += 4;
   put(fn,str_chr(fn,':'));
 }
 
-char strnum[FMT_ULONG];
-stralloc line = {0};
+char strnum[ULONG_FMT];
+stralloc line = STRALLOC_ZERO;
 
-void blast(ssfrom,limit)
-substdio *ssfrom;
-unsigned long limit;
+void blast(buffer *bfrom, unsigned long limit)
 {
   int match;
   int inheaders = 1;
  
   for (;;) {
-    if (getln(ssfrom,&line,&match,'\n') != 0) die();
+    if (getln(bfrom,&line,&match,'\n') != 0) die();
     if (!match && !line.len) break;
     if (match) --line.len; /* no way to pass this info over POP */
     if (limit) if (!inheaders) if (!--limit) break;
@@ -108,8 +143,8 @@ unsigned long limit;
   flush();
 }
 
-stralloc filenames = {0};
-prioq pq = {0};
+stralloc filenames = STRALLOC_ZERO;
+genalloc pq = GENALLOC_ZERO;
 
 struct message {
   int flagdeleted;
@@ -120,7 +155,7 @@ unsigned int numm;
 
 int last = 0;
 
-void getlist()
+void getlist(void)
 {
   struct prioq_elt pe;
   struct stat st;
@@ -129,7 +164,8 @@ void getlist()
   maildir_clean(&line);
   if (maildir_scan(&pq,&filenames,1,1) == -1) die_scan();
  
-  numm = pq.p ? pq.len : 0;
+  numm = genalloc_s(struct prioq_elt, &pq) ?
+      genalloc_len(struct prioq_elt, &pq) : 0;
   m = calloc(numm, sizeof(struct message));
   if (!m) die_nomem();
  
@@ -145,22 +181,22 @@ void getlist()
   }
 }
 
-void pop3_stat(arg) char *arg;
+void pop3_stat(char *arg)
 {
   unsigned int i;
   unsigned long total;
  
   total = 0;
   for (i = 0;i < numm;++i) if (!m[i].flagdeleted) total += m[i].size;
-  puts("+OK ");
-  put(strnum,fmt_uint(strnum,numm));
-  puts(" ");
-  put(strnum,fmt_ulong(strnum,total));
-  puts("\r\n");
+  timed_puts("+OK ");
+  put(strnum,uint_fmt(strnum,numm));
+  timed_puts(" ");
+  put(strnum,ulong_fmt(strnum,total));
+  timed_puts("\r\n");
   flush();
 }
 
-void pop3_rset(arg) char *arg;
+void pop3_rset(char *arg)
 {
   unsigned int i;
   for (i = 0;i < numm;++i) m[i].flagdeleted = 0;
@@ -168,15 +204,15 @@ void pop3_rset(arg) char *arg;
   okay(0);
 }
 
-void pop3_last(arg) char *arg;
+void pop3_last(char *arg)
 {
-  puts("+OK ");
-  put(strnum,fmt_uint(strnum,last));
-  puts("\r\n");
+  timed_puts("+OK ");
+  put(strnum,uint_fmt(strnum,last));
+  timed_puts("\r\n");
   flush();
 }
 
-void pop3_quit(arg) char *arg;
+void pop3_quit(char *arg)
 {
   unsigned int i;
   for (i = 0;i < numm;++i)
@@ -185,20 +221,20 @@ void pop3_quit(arg) char *arg;
     }
     else
       if (str_start(m[i].fn,"new/")) {
-	if (!stralloc_copys(&line,"cur/")) die_nomem();
-	if (!stralloc_cats(&line,m[i].fn + 4)) die_nomem();
-	if (!stralloc_cats(&line,":2,")) die_nomem();
-	if (!stralloc_0(&line)) die_nomem();
-	rename(m[i].fn,line.s); /* if it fails, bummer */
+        if (!stralloc_copys(&line,"cur/")) die_nomem();
+        if (!stralloc_cats(&line,m[i].fn + 4)) die_nomem();
+        if (!stralloc_cats(&line,":2,")) die_nomem();
+        if (!stralloc_0(&line)) die_nomem();
+        rename(m[i].fn,line.s); /* if it fails, bummer */
       }
   okay(0);
   die();
 }
 
-int msgno(arg) char *arg;
+int msgno(char *arg)
 {
   unsigned long u;
-  if (!scan_ulong(arg,&u)) { err_syntax(); return -1; }
+  if (!ulong_scan(arg,&u)) { err_syntax(); return -1; }
   if (!u) { err_nozero(); return -1; }
   --u;
   if (u >= numm || u >= INT_MAX) { err_toobig(); return -1; }
@@ -206,7 +242,7 @@ int msgno(arg) char *arg;
   return u;
 }
 
-void pop3_dele(arg) char *arg;
+void pop3_dele(char *arg)
 {
   int i;
   i = msgno(arg);
@@ -216,42 +252,40 @@ void pop3_dele(arg) char *arg;
   okay(0);
 }
 
-void list(i,flaguidl)
-int i;
-int flaguidl;
+void list(int i, int flaguidl)
 {
-  put(strnum,fmt_uint(strnum,i + 1));
-  puts(" ");
+  put(strnum,uint_fmt(strnum,i + 1));
+  timed_puts(" ");
   if (flaguidl) printfn(m[i].fn);
-  else put(strnum,fmt_ulong(strnum,m[i].size));
-  puts("\r\n");
+  else put(strnum,ulong_fmt(strnum,m[i].size));
+  timed_puts("\r\n");
 }
 
-void dolisting(arg,flaguidl) char *arg; int flaguidl;
+void dolisting(char *arg, int flaguidl)
 {
   unsigned int i;
   if (*arg) {
     i = msgno(arg);
     if (i == -1) return;
-    puts("+OK ");
+    timed_puts("+OK ");
     list(i,flaguidl);
   }
   else {
     okay(0);
     for (i = 0;i < numm;++i)
       if (!m[i].flagdeleted)
-	list(i,flaguidl);
-    puts(".\r\n");
+        list(i,flaguidl);
+    timed_puts(".\r\n");
   }
   flush();
 }
 
-void pop3_uidl(arg) char *arg; { dolisting(arg,1); }
-void pop3_list(arg) char *arg; { dolisting(arg,0); }
+void pop3_uidl(char *arg) { dolisting(arg,1); }
+void pop3_list(char *arg) { dolisting(arg,0); }
 
-substdio ssmsg; char ssmsgbuf[1024];
+buffer bmsg; char bmsgbuf[1024];
 
-void pop3_top(arg) char *arg;
+void pop3_top(char *arg)
 {
   int i;
   unsigned long limit;
@@ -260,15 +294,15 @@ void pop3_top(arg) char *arg;
   i = msgno(arg);
   if (i == -1) return;
  
-  arg += scan_ulong(arg,&limit);
+  arg += ulong_scan(arg,&limit);
   while (*arg == ' ') ++arg;
-  if (scan_ulong(arg,&limit)) ++limit; else limit = 0;
+  if (ulong_scan(arg,&limit)) ++limit; else limit = 0;
  
   fd = open_read(m[i].fn);
   if (fd == -1) { err_nosuch(); return; }
   okay(0);
-  substdio_fdbuf(&ssmsg,read,fd,ssmsgbuf,sizeof(ssmsgbuf));
-  blast(&ssmsg,limit);
+  buffer_init(&bmsg, buffer_read, fd, bmsgbuf, sizeof(bmsgbuf));
+  blast(&bmsg,limit);
   close(fd);
 }
 
@@ -288,8 +322,8 @@ struct commands pop3commands[] = {
 
 int main(int argc, char **argv)
 {
-  sig_alarmcatch(die);
-  sig_pipeignore();
+  sig_catch(SIGALRM, die);
+  sig_ignore(SIGPIPE);
  
   if (!getuid()) die_root();
   if (!argv[1]) die_nomaildir();
@@ -298,6 +332,6 @@ int main(int argc, char **argv)
   getlist();
 
   okay(0);
-  commands(&ssin,pop3commands);
+  commands(&bin,pop3commands);
   die();
 }
