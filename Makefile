@@ -1189,21 +1189,16 @@ auto_qmail.h auto_users.h
 	./compile qmail-pw2u.c
 
 qmail-qmqpc: \
-load qmail-qmqpc.o slurpclose.o timeoutread.o timeoutwrite.o \
-timeoutconn.o ip.o control.o auto_qmail.o sig.a ndelay.a open.a \
-getln.a substdio.a stralloc.a error.a str.a fs.a socket.lib
-	./load qmail-qmqpc slurpclose.o timeoutread.o \
-	timeoutwrite.o timeoutconn.o ip.o control.o auto_qmail.o \
-	sig.a ndelay.a open.a getln.a substdio.a stralloc.a \
-	error.a str.a fs.a  `cat socket.lib`
+load qmail-qmqpc.o slurpclose.o control.o auto_qmail.o \
+getln.a fs.a socket.lib
+	./load qmail-qmqpc slurpclose.o control.o auto_qmail.o \
+	getln.a -lskarnet `cat socket.lib`
 
 qmail-qmqpc.0: \
 qmail-qmqpc.8
 
 qmail-qmqpc.o: \
-compile qmail-qmqpc.c substdio.h getln.h readwrite.h exit.h \
-stralloc.h gen_alloc.h slurpclose.h error.h sig.h ip.h timeoutconn.h \
-timeoutread.h timeoutwrite.h auto_qmail.h control.h fmt.h
+compile qmail-qmqpc.c getln.h slurpclose.h auto_qmail.h control.h
 	./compile qmail-qmqpc.c
 
 qmail-qmqpd: \
