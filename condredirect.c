@@ -102,5 +102,7 @@ int main(int argc, char **argv)
   qqx = qmail_close(&qqt);
   if (*qqx)
     strerr_dief1x(*qqx == 'D' ? 100 : 111, qqx + 1);
-  strerr_die2x(99, "qp ", num);
+  buffer_puts(buffer_2, "qp ");
+  buffer_putsflush(buffer_2, num);
+  return 99;
 }

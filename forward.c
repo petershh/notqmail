@@ -1,12 +1,15 @@
+#include <signal.h>
+
 #include <skalibs/strerr.h>
 #include <skalibs/strerr2.h>
 #include <skalibs/buffer.h>
 #include <skalibs/types.h>
 #include <skalibs/env.h>
+#include <skalibs/sig.h>
 
-#include "sig.h"
 #include "qmail.h"
 /*
+#include "sig.h"
 #include "readwrite.h"
 #include "env.h"
 #include "strerr.h"
@@ -37,7 +40,7 @@ int main(int argc, char **argv)
   int i;
   PROG = "forward";
  
-  sig_pipeignore();
+  sig_ignore(SIGPIPE);
  
   sender = env_get("NEWSENDER");
   if (!sender)
@@ -60,5 +63,7 @@ int main(int argc, char **argv)
     qmail_to(&qqt,argv[i]);
   qqx = qmail_close(&qqt);
   if (*qqx) strerr_dief1x(*qqx == 'D' ? 100 : 111, qqx + 1);
-  strerr_die2x(0, "qp ",num);
+  buffer_puts(buffer_2, "qp ");
+  buffer_putsflush(buffer_2, num);
+  return 0;
 }

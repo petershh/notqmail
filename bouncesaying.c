@@ -9,18 +9,22 @@
 
 #define FATAL "bouncesaying: fatal: "
 #endif
+#include <errno.h>
 
 #include <unistd.h>
 
-#include <skalibs/strerr2.h>
+#include <skalibs/strerr.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/error.h>
+#include <skalibs/buffer.h>
 
-#define USAGE "bouncesaying error [ program [ arg ... ] ]";
+#include "wait.h"
+
+#define USAGE "bouncesaying error [ program [ arg ... ] ]"
 
 int main(int argc, char **argv)
 {
-    int pid;
+    pid_t pid;
     int wstat;
     PROG = "bouncesaying";
     if (argc == 1)
@@ -36,7 +40,7 @@ int main(int argc, char **argv)
                 _exit(111);
             _exit(100);
         }
-        if (wait_pid(&wstat, pid) == -1)
+        if (wait_pid(pid, &wstat) == -1)
             strerr_dief1x(111, "wait failed");
         if (wait_crashed(wstat))
             strerr_dief1x(111, "child crashed");
@@ -51,5 +55,6 @@ int main(int argc, char **argv)
         }
     }
 
-    strerr_die1x(100, argv[1]);
+    buffer_putsflush(buffer_2, argv[1]);
+    return 100;
 }

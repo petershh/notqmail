@@ -558,8 +558,8 @@ forgeries.0: \
 forgeries.7
 
 forward: \
-load forward.o qmail.o sig.a substdio.a auto_qmail.o
-	./load forward qmail.o sig.a substdio.a auto_qmail.o -lskarnet
+load forward.o qmail.o substdio_copy.a auto_qmail.o
+	./load forward qmail.o substdio_copy.a auto_qmail.o -lskarnet
 
 forward.0: \
 forward.1
@@ -764,8 +764,8 @@ qmail-clean qmail-send qmail-start splogger qmail-queue qmail-inject \
 predate datemail mailsubj qmail-upq qmail-showctl qmail-newu \
 qmail-pw2u qmail-qread qmail-qstat qmail-tcpto qmail-tcpok \
 qmail-pop3d qmail-popup qmail-qmqpc qmail-qmqpd qmail-qmtpd \
-qmail-smtpd sendmail tcp-env qmail-newmrh config config-fast \
-dnsptr dnsip dnsfq hostname ipmeprint qreceipt qbiff \
+qmail-smtpd sendmail qmail-newmrh config config-fast \
+ipmeprint qreceipt qbiff \
 forward preline condredirect bouncesaying except maildirmake \
 maildir2mbox install instpackage instqueue instchown \
 instcheck home home+df proc proc+df binm1 binm1+df binm2 binm2+df \
