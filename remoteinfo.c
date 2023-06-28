@@ -62,7 +62,7 @@ char *remoteinfo_get(ip46 *ipr, unsigned long rp, ip46 *ipl, unsigned long lp,
   /* TODO: this api should be deadline-based in the first place */
   tain_now(&now);
   tain_addsec(&deadline, &now, t);
-  if (socket_deadlineconnstamp46(s, ipr, 113, &deadline, &now) == -1) {
+  if (socket_deadlineconnstamp46(s, ipr, 113, &deadline, &now) == 0) {
     close(s);
     return 0;
   }
