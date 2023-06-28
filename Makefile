@@ -1144,20 +1144,14 @@ compile qmail-pop3d.c commands.h getln.h prioq.h maildir.h
 	./compile qmail-pop3d.c
 
 qmail-popup: \
-load qmail-popup.o commands.o timeoutread.o timeoutwrite.o \
-case.a fd.a sig.a wait.a stralloc.a substdio.a error.a str.a \
-fs.a socket.lib
-	./load qmail-popup commands.o timeoutread.o timeoutwrite.o \
-	case.a fd.a sig.a wait.a stralloc.a \
-	substdio.a error.a str.a fs.a  `cat socket.lib`
+load qmail-popup.o commands.o socket.lib
+	./load qmail-popup commands.o `cat socket.lib` -lskarnet
 
 qmail-popup.0: \
 qmail-popup.8
 
 qmail-popup.o: \
-compile qmail-popup.c commands.h fd.h sig.h stralloc.h gen_alloc.h \
-substdio.h alloc.h wait.h str.h byte.h now.h datetime.h fmt.h exit.h \
-readwrite.h timeoutread.h timeoutwrite.h
+compile qmail-popup.c commands.h wait.h
 	./compile qmail-popup.c
 
 qmail-pw2u: \

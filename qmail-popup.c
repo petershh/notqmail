@@ -1,40 +1,69 @@
-#include "commands.h"
+#include <errno.h>
+
+#include <unistd.h>
+#include <signal.h>
+
+#include <skalibs/sig.h>
+#include <skalibs/stralloc.h>
+#include <skalibs/buffer.h>
+#include <skalibs/alloc.h>
+#include <skalibs/bytestr.h>
+#include <skalibs/types.h>
+#include <skalibs/djbunix.h>
+#include <skalibs/tai.h>
+#include <skalibs/unix-timed.h>
+
+/*
 #include "fd.h"
 #include "sig.h"
 #include "stralloc.h"
 #include "substdio.h"
 #include "alloc.h"
-#include "wait.h"
 #include "str.h"
 #include "byte.h"
 #include "now.h"
 #include "fmt.h"
 #include "exit.h"
-#include "noreturn.h"
 #include "readwrite.h"
 #include "timeoutread.h"
 #include "timeoutwrite.h"
+*/
+
+#include "wait.h"
+#include "commands.h"
+#include "noreturn.h"
 
 void _noreturn_ die() { _exit(1); }
 
+/*
 GEN_SAFE_TIMEOUTREAD(saferead,1200,fd,die())
 GEN_SAFE_TIMEOUTWRITE(safewrite,1200,fd,die())
+*/
 
-char ssoutbuf[128];
-substdio ssout = SUBSTDIO_FDBUF(safewrite,1,ssoutbuf,sizeof(ssoutbuf));
+char boutbuf[128];
+buffer bout = BUFFER_INIT(buffer_write,1,boutbuf,sizeof(boutbuf));
 
-char ssinbuf[128];
-substdio ssin = SUBSTDIO_FDBUF(saferead,0,ssinbuf,sizeof(ssinbuf));
+char binbuf[128];
+buffer bin = BUFFER_INIT(buffer_read,0,binbuf,sizeof(binbuf));
 
-void puts(s) char *s;
+void puts(char *s)
 {
-  substdio_puts(&ssout,s);
+  tain now, deadline;
+  tain_now(&now);
+  tain_addsec(&deadline, &now, 1200);
+  if (buffer_timed_puts(&bout, s, &deadline, &now) <= 0)
+    die();
 }
-void flush()
+
+void flush(void)
 {
-  substdio_flush(&ssout);
+  tain now, deadline;
+  tain_now(&now);
+  tain_addsec(&deadline, &now, 1200);
+  if (buffer_timed_flush(&bout, &deadline, &now) <= 0)
+    die();
 }
-void err(s) char *s;
+void err(char *s)
 {
   puts("-ERR ");
   puts(s);
@@ -42,30 +71,33 @@ void err(s) char *s;
   flush();
 }
 
-void _noreturn_ die_usage() { err("usage: popup hostname subprogram"); die(); }
-void _noreturn_ die_nomem() { err("out of memory"); die(); }
-void _noreturn_ die_pipe() { err("unable to open pipe"); die(); }
-void _noreturn_ die_write() { err("unable to write pipe"); die(); }
-void _noreturn_ die_fork() { err("unable to fork"); die(); }
-void die_childcrashed() { err("aack, child crashed"); }
-void die_badauth() { err("authorization failed"); }
+void _noreturn_ die_usage(void)
+{
+  err("usage: popup hostname subprogram"); die();
+}
 
-void err_syntax() { err("syntax error"); }
-void err_wantuser() { err("USER first"); }
-void err_authoriz(arg) char *arg; { err("authorization first"); }
+void _noreturn_ die_nomem(void) { err("out of memory"); die(); }
+void _noreturn_ die_pipe(void) { err("unable to open pipe"); die(); }
+void _noreturn_ die_write(void) { err("unable to write pipe"); die(); }
+void _noreturn_ die_fork(void) { err("unable to fork"); die(); }
+void die_childcrashed(void) { err("aack, child crashed"); }
+void die_badauth(void) { err("authorization failed"); }
 
-void okay(arg) char *arg; { puts("+OK \r\n"); flush(); }
+void err_syntax(void) { err("syntax error"); }
+void err_wantuser(void) { err("USER first"); }
+void err_authoriz(char *arg) { err("authorization first"); }
+
+void okay(char *arg) { puts("+OK \r\n"); flush(); }
 void _noreturn_ pop3_quit(char *arg) { okay(0); die(); }
 
 
-char unique[FMT_ULONG + FMT_ULONG + 3];
+char unique[ULONG_FMT + ULONG_FMT + 3];
 char *hostname;
-stralloc username = {0};
+stralloc username = STRALLOC_ZERO;
 int seenuser = 0;
 char **childargs;
-substdio ssup;
+buffer bup;
 char upbuf[128];
-
 
 void _noreturn_ doanddie(char *user,
                          unsigned int userlen, /* including 0 byte */
@@ -83,34 +115,36 @@ void _noreturn_ doanddie(char *user,
       die_fork();
     case 0:
       close(pi[1]);
-      sig_pipedefault();
+      sig_restore(SIGPIPE);
       execvp(*childargs,childargs);
       _exit(1);
   }
   close(pi[0]);
-  substdio_fdbuf(&ssup,write,pi[1],upbuf,sizeof(upbuf));
-  if (substdio_put(&ssup,user,userlen) == -1) die_write();
-  if (substdio_put(&ssup,pass,str_len(pass) + 1) == -1) die_write();
-  if (substdio_puts(&ssup,"<") == -1) die_write();
-  if (substdio_puts(&ssup,unique) == -1) die_write();
-  if (substdio_puts(&ssup,hostname) == -1) die_write();
-  if (substdio_put(&ssup,">",2) == -1) die_write();
-  if (substdio_flush(&ssup) == -1) die_write();
+  buffer_init(&bup,buffer_write,pi[1],upbuf,sizeof(upbuf));
+  if (buffer_put(&bup,user,userlen) == -1) die_write();
+  if (buffer_put(&bup,pass,str_len(pass) + 1) == -1) die_write();
+  if (buffer_puts(&bup,"<") == -1) die_write();
+  if (buffer_puts(&bup,unique) == -1) die_write();
+  if (buffer_puts(&bup,hostname) == -1) die_write();
+  if (buffer_put(&bup,">",2) == -1) die_write();
+  if (buffer_flush(&bup) == -1) die_write();
   close(pi[1]);
   byte_zero(pass,str_len(pass));
   byte_zero(upbuf,sizeof(upbuf));
-  if (wait_pid(&wstat,child) == -1) die();
+  if (wait_pid(child, &wstat) == -1) die();
   if (wait_crashed(wstat)) die_childcrashed();
   if (wait_exitcode(wstat)) die_badauth();
   die();
 }
-void pop3_greet()
+void pop3_greet(void)
 {
+  tai now;
   char *s;
   s = unique;
-  s += fmt_uint(s,getpid());
+  s += pid_fmt(s,getpid());
   *s++ = '.';
-  s += fmt_ulong(s,(unsigned long) now());
+  tai_now(&now);
+  s += ulong_fmt(s, (unsigned long) tai_sec(&now));
   *s++ = '@';
   *s++ = 0;
   puts("+OK <");
@@ -119,7 +153,7 @@ void pop3_greet()
   puts(">\r\n");
   flush();
 }
-void pop3_user(arg) char *arg;
+void pop3_user(char *arg)
 {
   if (!*arg) { err_syntax(); return; }
   okay(0);
@@ -127,13 +161,13 @@ void pop3_user(arg) char *arg;
   if (!stralloc_copys(&username,arg)) die_nomem(); 
   if (!stralloc_0(&username)) die_nomem(); 
 }
-void pop3_pass(arg) char *arg;
+void pop3_pass(char *arg)
 {
   if (!seenuser) { err_wantuser(); return; }
   if (!*arg) { err_syntax(); return; }
   doanddie(username.s,username.len,arg);
 }
-void pop3_apop(arg) char *arg;
+void pop3_apop(char *arg)
 {
   char *space;
   space = arg + str_chr(arg,' ');
@@ -153,8 +187,8 @@ struct commands pop3commands[] = {
 
 int main(int argc, char **argv)
 {
-  sig_alarmcatch(die);
-  sig_pipeignore();
+  sig_catch(SIGALRM, die);
+  sig_ignore(SIGPIPE);
  
   hostname = argv[1];
   if (!hostname) die_usage();
@@ -162,6 +196,6 @@ int main(int argc, char **argv)
   if (!*childargs) die_usage();
  
   pop3_greet();
-  commands(&ssin,pop3commands);
+  commands(&bin,pop3commands);
   die();
 }
