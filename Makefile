@@ -238,7 +238,7 @@ load chkspawn.o auto_spawn.o
 	./load chkspawn auto_spawn.o -lskarnet
 
 chkspawn.o: \
-compile chkspawn.c substdio.h subfd.h substdio.h fmt.h select.h \
+compile chkspawn.c buffer_copy.h fmt.h select.h \
 auto_spawn.h
 	./compile chkspawn.c
 
@@ -257,15 +257,14 @@ make-compile warn-auto.sh
 	chmod 755 compile
 
 condredirect: \
-load condredirect.o qmail.o substdio_copy.o auto_qmail.o
-	./load condredirect qmail.o substdio_copy.o auto_qmail.o -lskarnet
+load condredirect.o qmail.o buffer_copy.a auto_qmail.o
+	./load condredirect qmail.o buffer_copy.a auto_qmail.o -lskarnet
 
 condredirect.0: \
 condredirect.1
 
 condredirect.o: \
-compile condredirect.c sig.h readwrite.h exit.h env.h error.h fork.h \
-wait.h seek.h qmail.h substdio.h strerr.h substdio.h fmt.h
+compile condredirect.c wait.h seek.h qmail.h buffer_copy.h
 	./compile condredirect.c
 
 config: \
@@ -291,8 +290,7 @@ compile constmap.c constmap.h alloc.h case.h
 	./compile constmap.c
 
 control.o: \
-compile control.c readwrite.h open.h getln.h stralloc.h gen_alloc.h \
-substdio.h error.h control.h alloc.h scan.h
+compile control.c getln.h control.h
 	./compile control.c
 
 date822fmt.o: \
@@ -363,8 +361,8 @@ forgeries.0: \
 forgeries.7
 
 forward: \
-load forward.o qmail.o substdio_copy.a auto_qmail.o
-	./load forward qmail.o substdio_copy.a auto_qmail.o -lskarnet
+load forward.o qmail.o buffer_copy.a auto_qmail.o
+	./load forward qmail.o buffer_copy.a auto_qmail.o -lskarnet
 
 forward.0: \
 forward.1
@@ -513,9 +511,9 @@ compile instfiles.c
 
 instpackage: \
 load instpackage.o instfiles.o hier.o auto_qmail.o auto_split.o \
-substdio_copy.a fs.a 
+buffer_copy.a fs.a 
 	./load instpackage instfiles.o hier.o auto_qmail.o auto_split.o \
-	substdio_copy.a fs.a -lskarnet
+	buffer_copy.a fs.a -lskarnet
 
 instpackage.o: \
 compile instpackage.c open.h strerr.h hier.h
@@ -523,9 +521,9 @@ compile instpackage.c open.h strerr.h hier.h
 
 instqueue: \
 load instqueue.o instfiles.o hier.o auto_qmail.o auto_split.o \
-substdio_copy.a fs.a
+buffer_copy.a fs.a
 	./load instqueue instfiles.o hier.o auto_qmail.o auto_split.o \
-	substdio_copy.a fs.a -lskarnet
+	buffer_copy.a fs.a -lskarnet
 
 instqueue.o: \
 compile instqueue.c open.h strerr.h hier.h
@@ -545,8 +543,7 @@ load ipmeprint.o ipme.o socket.lib
 	./load ipmeprint ipme.o `cat socket.lib` -lskarnet
 
 ipmeprint.o: \
-compile ipmeprint.c subfd.h substdio.h substdio.h ip.h ipme.h ip.h \
-ipalloc.h ip.h gen_alloc.h
+compile ipmeprint.c ipme.h ipalloc.h
 	./compile ipmeprint.c
 
 it: \
@@ -592,15 +589,15 @@ compile maildir.c prioq.h maildir.h strerr.h
 
 maildir2mbox: \
 load maildir2mbox.o maildir.o prioq.o myctime.o gfrom.o \
-getln.a strerr.a fs.a substdio_copy.a
+getln.a strerr.a fs.a buffer_copy.a
 	./load maildir2mbox maildir.o prioq.o myctime.o \
-	gfrom.o getln.a strerr.a fs.a substdio_copy.a -lskarnet
+	gfrom.o getln.a strerr.a fs.a buffer_copy.a -lskarnet
 
 maildir2mbox.0: \
 maildir2mbox.1
 
 maildir2mbox.o: \
-compile maildir2mbox.c prioq.h substdio.h getln.h \
+compile maildir2mbox.c prioq.h buffer_copy.h getln.h \
 gfrom.h myctime.h maildir.h strerr.h
 	./compile maildir2mbox.c
 
@@ -684,22 +681,22 @@ it man
 	./instpackage
 
 predate: \
-load predate.o strerr.a substdio_copy.a
-	./load predate strerr.a substdio_copy.a -lskarnet
+load predate.o strerr.a buffer_copy.a
+	./load predate strerr.a buffer_copy.a -lskarnet
 
 predate.o: \
-compile predate.c wait.h fmt.h strerr.h substdio.h
+compile predate.c wait.h fmt.h strerr.h buffer_copy.h
 	./compile predate.c
 
 preline: \
-load preline.o substdio_copy.a
-	./load preline substdio_copy.a -lskarnet
+load preline.o buffer_copy.a
+	./load preline buffer_copy.a -lskarnet
 
 preline.0: \
 preline.1
 
 preline.o: \
-compile preline.c substdio.h wait.h
+compile preline.c buffer_copy.h wait.h
 	./compile preline.c
 
 prioq.o: \
@@ -813,10 +810,10 @@ qmail-limits.9 conf-qmail conf-break conf-spawn
 
 qmail-local: \
 load qmail-local.o qmail.o quote.o gfrom.o myctime.o \
-slurpclose.o getln.a lock.a fs.a substdio_copy.a \
+slurpclose.o getln.a lock.a fs.a buffer_copy.a \
 auto_qmail.o auto_patrn.o socket.lib
 	./load qmail-local qmail.o quote.o gfrom.o myctime.o \
-	slurpclose.o getln.a lock.a fs.a substdio_copy.a \
+	slurpclose.o getln.a lock.a fs.a buffer_copy.a \
 	auto_qmail.o auto_patrn.o  `cat socket.lib` -lskarnet
 
 qmail-local.0: \
@@ -824,7 +821,7 @@ qmail-local.8
 
 qmail-local.o: \
 compile qmail-local.c lock.h getln.h fmt.h \
-substdio.h quote.h qmail.h slurpclose.h myctime.h gfrom.h \
+buffer_copy.h quote.h qmail.h slurpclose.h myctime.h gfrom.h \
 auto_patrn.h
 	./compile qmail-local.c
 
@@ -996,18 +993,18 @@ qmail-qstat.8
 
 qmail-queue: \
 load qmail-queue.o triggerpull.o fmtqfn.o date822fmt.o \
-substdio_copy.a fs.a auto_qmail.o \
+buffer_copy.a fs.a auto_qmail.o \
 auto_split.o ids.a
 	./load qmail-queue triggerpull.o fmtqfn.o \
 	date822fmt.o auto_qmail.o \
-	auto_split.o ids.a substdio_copy.a fs.a -lskarnet
+	auto_split.o ids.a buffer_copy.a fs.a -lskarnet
 
 qmail-queue.0: \
 qmail-queue.8
 
 qmail-queue.o: \
 compile qmail-queue.c fmt.h \
-substdio.h triggerpull.h extra.h uidgid.h auto_qmail.h \
+buffer_copy.h triggerpull.h extra.h uidgid.h auto_qmail.h \
 auto_uids.h auto_users.h date822fmt.h fmtqfn.h
 	./compile qmail-queue.c
 
@@ -1141,7 +1138,7 @@ qmail-tcpto.0: \
 qmail-tcpto.8
 
 qmail-tcpto.o: \
-compile qmail-tcpto.c subfd.h substdio.h auto_qmail.h byte.h \
+compile qmail-tcpto.c subfd.h buffer_copy.h auto_qmail.h byte.h \
 fmt.h ip.h lock.h error.h exit.h open.h
 	./compile qmail-tcpto.c
 
@@ -1169,7 +1166,7 @@ qmail.0: \
 qmail.7
 
 qmail.o: \
-compile qmail.c substdio.h readwrite.h wait.h exit.h fork.h fd.h \
+compile qmail.c buffer_copy.h readwrite.h wait.h exit.h fork.h fd.h \
 qmail.h auto_qmail.h env.h
 	./compile qmail.c
 
@@ -1275,17 +1272,13 @@ strerr_sys.o: \
 compile strerr_sys.c strerr.h
 	./compile strerr_sys.c
 
-substdi.o: \
-compile substdi.c substdio.h byte.h error.h
-	./compile substdi.c
+buffer_copy.a: \
+makelib buffer_copy.o
+	./makelib buffer_copy.a buffer_copy.o
 
-substdio_copy.a: \
-makelib substdio_copy.o
-	./makelib substdio_copy.a substdio_copy.o
-
-substdio_copy.o: \
-compile substdio_copy.c substdio.h
-	./compile substdio_copy.c
+buffer_copy.o: \
+compile buffer_copy.c buffer_copy.h
+	./compile buffer_copy.c
 
 syslog.lib: \
 trysyslog.c compile load

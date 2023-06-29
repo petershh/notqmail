@@ -1,10 +1,3 @@
-#if 0
-#include "substdio.h"
-#include "subfd.h"
-#include "fmt.h"
-#include "select.h"
-#endif
-
 #include <sys/select.h>
 
 #include <skalibs/types.h>

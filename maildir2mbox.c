@@ -17,7 +17,7 @@
 #include "myctime.h"
 #include "gfrom.h"
 #include "maildir.h"
-#include "substdio.h"
+#include "buffer_copy.h"
 
 char const *mbox;
 char const *mboxtmp;

@@ -12,7 +12,7 @@
 #include <skalibs/bytestr.h>
 #include <skalibs/djbunix.h>
 
-#include "substdio.h"
+#include "buffer_copy.h"
 
 int fdsourcedir = -1;
 

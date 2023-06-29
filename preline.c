@@ -10,7 +10,7 @@
 #include <skalibs/env.h>
 
 #include "wait.h"
-#include "substdio.h"
+#include "buffer_copy.h"
 
 void die_usage()
 {

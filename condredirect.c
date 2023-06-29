@@ -12,19 +12,13 @@
 #include <skalibs/types.h>
 
 #include "seek.h"
-#include "substdio.h"
+#include "buffer_copy.h"
 #include "qmail.h"
 #include "wait.h"
 
 struct qmail qqt;
 
 GEN_QMAILPUT_WRITE(&qqt)
-/*
-char inbuf[SUBSTDIO_INSIZE];
-char outbuf[1];
-substdio ssin = SUBSTDIO_FDBUF(read,0,inbuf,sizeof(inbuf));
-substdio ssout = SUBSTDIO_FDBUF(qmail_put_write,-1,outbuf,sizeof(outbuf));
-*/
 char num[ULONG_FMT];
 
 #define USAGE "condredirect newaddress program [ arg ... ]"

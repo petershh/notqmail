@@ -5,10 +5,6 @@
 #include <skalibs/buffer.h>
 
 #include "uidgid.h"
-/*
-#include "subfd.h"
-#include "substdio.h"
-*/
 
 gid_t
 initgid(char *group)

@@ -13,7 +13,7 @@
 #include <skalibs/djbtime.h>
 #include <skalibs/bytestr.h>
 
-#include "substdio.h"
+#include "buffer_copy.h"
 #include "fmt.h"
 #include "triggerpull.h"
 #include "extra.h"

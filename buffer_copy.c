@@ -1,7 +1,7 @@
 #include <sys/uio.h>
 
 #include <skalibs/buffer.h>
-#include "substdio.h"
+#include "buffer_copy.h"
 
 int buffer_copy(buffer *bout, buffer *bin)
 {

@@ -20,7 +20,7 @@
 #include <skalibs/exec.h>
 #include <skalibs/tai.h>
 
-#include "substdio.h"
+#include "buffer_copy.h"
 #include "getln.h"
 #include "fmt.h"
 #include "quote.h"

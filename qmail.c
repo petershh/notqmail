@@ -6,7 +6,7 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/env.h>
 
-#include "substdio.h"
+#include "buffer_copy.h"
 #include "wait.h"
 #include "auto_qmail.h"
 
