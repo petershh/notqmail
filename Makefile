@@ -938,8 +938,8 @@ compile predate.c wait.h fmt.h strerr.h substdio.h
 	./compile predate.c
 
 preline: \
-load preline.o wait.a substdio_copy.a
-	./load preline wait.a substdio_copy.a -lskarnet 
+load preline.o substdio_copy.a
+	./load preline substdio_copy.a -lskarnet
 
 preline.0: \
 preline.1
