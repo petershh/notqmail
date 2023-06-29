@@ -383,10 +383,6 @@ getln.o: \
 compile getln.c getln.h
 	./compile getln.c
 
-getln2.o: \
-compile getln2.c substdio.h stralloc.h gen_alloc.h byte.h getln.h
-	./compile getln2.c
-
 gfrom.o: \
 compile gfrom.c str.h gfrom.h
 	./compile gfrom.c
