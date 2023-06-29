@@ -1,8 +1,9 @@
 #include <stddef.h>
 #include <unistd.h>
-#include "select.h"
-#include "open.h"
-#include "fifo.h"
+
+#include <skalibs/djbunix.h>
+
+#include <sys/select.h>
 
 #define FN "temp-trynpbg1.fifo"
 

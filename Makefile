@@ -611,9 +611,9 @@ trymkffo.c compile load
 	rm -f trymkffo.o trymkffo
 
 hasnpbg1.h: \
-trynpbg1.c compile load open.h open.a fifo.h fifo.o select.h
+trynpbg1.c compile load
 	( ( ./compile trynpbg1.c \
-	&& ./load trynpbg1 fifo.o open.a && ./trynpbg1 ) \
+	&& ./load trynpbg1 -lskarnet && ./trynpbg1 ) \
 	>/dev/null 2>&1 \
 	&& echo \#define HASNAMEDPIPEBUG1 1 || exit 0 ) > \
 	hasnpbg1.h
