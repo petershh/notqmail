@@ -1,13 +1,20 @@
 #include "hier.h"
 
 #include <sys/types.h>
+#include <sys/stat.h>
+
+#include <skalibs/types.h>
+
 #include "auto_qmail.h"
 #include "auto_split.h"
 #include "auto_uids.h"
 #include "fmt.h"
-#include "fifo.h"
 
-char buf[100 + FMT_ULONG];
+/*
+#include "fifo.h"
+*/
+
+char buf[100 + ULONG_FMT];
 
 void dsplit(char *base, /* must be under 100 bytes */
             uid_t uid, int mode)
@@ -21,7 +28,7 @@ void dsplit(char *base, /* must be under 100 bytes */
     x = buf;
     x += fmt_str(x,base);
     x += fmt_str(x,"/");
-    x += fmt_ulong(x,i);
+    x += ulong_fmt(x,i);
     *x = 0;
 
     d(auto_qmail,buf,uid,auto_gidq,mode);

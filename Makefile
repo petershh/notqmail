@@ -655,7 +655,7 @@ compile hfield.c hfield.h
 	./compile hfield.c
 
 hier.o: \
-compile hier.c auto_qmail.h auto_split.h auto_uids.h fmt.h fifo.h hier.h
+compile hier.c auto_qmail.h auto_split.h auto_uids.h fmt.h hier.h
 	./compile hier.c
 
 home: \
@@ -697,13 +697,13 @@ compile instcheck.c strerr.h error.h readwrite.h hier.h
 	./compile instcheck.c
 
 instchown: \
-load instchown.o instuidgid.o fifo.o hier.o auto_qmail.o auto_split.o \
-ids.a strerr.a substdio.a error.a str.a fs.a
-	./load instchown instuidgid.o fifo.o hier.o auto_qmail.o auto_split.o \
-	ids.a strerr.a substdio.a error.a str.a fs.a
+load instchown.o instuidgid.o hier.o auto_qmail.o auto_split.o \
+ids.a fs.a
+	./load instchown instuidgid.o hier.o auto_qmail.o auto_split.o \
+	ids.a fs.a -lskarnet
 
 instchown.o: \
-compile instchown.c strerr.h error.h exit.h hier.h
+compile instchown.c hier.h
 	./compile instchown.c
 
 instfiles.o: \
