@@ -14,7 +14,9 @@
 #include "received.h"
 #include "now.h"
 
-void resources(void) { _exit(111); }
+void resources() { _exit(111); }
+
+void resources_handler(int sig) { _exit(111); }
 
 ssize_t safewrite(int fd, const struct iovec *vbuf, unsigned int len)
 {
@@ -118,7 +120,7 @@ main(void)
   char ch;
 
   sig_ignore(SIGPIPE);
-  sig_catch(SIGALRM, resources);
+  sig_catch(SIGALRM, resources_handler);
   alarm(3600);
 
   bytesleft = getlen();
