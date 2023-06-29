@@ -707,8 +707,7 @@ compile instchown.c hier.h
 	./compile instchown.c
 
 instfiles.o: \
-compile instfiles.c substdio.h strerr.h env.h error.h fifo.h open.h \
-str.h stralloc.h
+compile instfiles.c substdio.h
 	./compile instfiles.c
 
 instpackage: \
