@@ -687,13 +687,13 @@ instpackage instchown warn-auto.sh
 	chmod 755 install
 
 instcheck: \
-load instcheck.o instuidgid.o fifo.o hier.o auto_qmail.o auto_split.o \
-ids.a strerr.a substdio.a error.a str.a fs.a
-	./load instcheck instuidgid.o fifo.o hier.o auto_qmail.o auto_split.o \
-	ids.a strerr.a substdio.a error.a str.a fs.a
+load instcheck.o instuidgid.o hier.o auto_qmail.o auto_split.o \
+ids.a fs.a
+	./load instcheck instuidgid.o hier.o auto_qmail.o auto_split.o \
+	ids.a fs.a -lskarnet
 
 instcheck.o: \
-compile instcheck.c strerr.h error.h readwrite.h hier.h
+compile instcheck.c hier.h
 	./compile instcheck.c
 
 instchown: \
