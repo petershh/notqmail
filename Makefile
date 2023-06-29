@@ -229,90 +229,6 @@ bouncesaying.o: \
 compile bouncesaying.c fork.h strerr.h error.h wait.h sig.h exit.h
 	./compile bouncesaying.c
 
-byte_chr.o: \
-compile byte_chr.c byte.h
-	./compile byte_chr.c
-
-byte_copy.o: \
-compile byte_copy.c byte.h
-	./compile byte_copy.c
-
-byte_cr.o: \
-compile byte_cr.c byte.h
-	./compile byte_cr.c
-
-byte_rchr.o: \
-compile byte_rchr.c byte.h
-	./compile byte_rchr.c
-
-byte_zero.o: \
-compile byte_zero.c byte.h
-	./compile byte_zero.c
-
-case.a: \
-makelib case_diffb.o case_diffs.o case_lowerb.o case_lowers.o \
-case_starts.o
-	./makelib case.a case_diffb.o case_diffs.o case_lowerb.o \
-	case_lowers.o case_starts.o
-
-case_diffb.o: \
-compile case_diffb.c case.h
-	./compile case_diffb.c
-
-case_diffs.o: \
-compile case_diffs.c case.h
-	./compile case_diffs.c
-
-case_lowerb.o: \
-compile case_lowerb.c case.h
-	./compile case_lowerb.c
-
-case_lowers.o: \
-compile case_lowers.c case.h
-	./compile case_lowers.c
-
-case_starts.o: \
-compile case_starts.c case.h
-	./compile case_starts.c
-
-cdb.a: \
-makelib cdb_hash.o cdb_unpack.o cdb_seek.o
-	./makelib cdb.a cdb_hash.o cdb_unpack.o cdb_seek.o
-
-cdb_hash.o: \
-compile cdb_hash.c cdb.h uint32.h
-	./compile cdb_hash.c
-
-cdb_seek.o: \
-compile cdb_seek.c cdb.h uint32.h
-	./compile cdb_seek.c
-
-cdb_unpack.o: \
-compile cdb_unpack.c cdb.h uint32.h
-	./compile cdb_unpack.c
-
-cdbmake.a: \
-makelib cdbmake_pack.o cdbmake_hash.o cdbmake_add.o
-	./makelib cdbmake.a cdbmake_pack.o cdbmake_hash.o \
-	cdbmake_add.o
-
-cdbmake_add.o: \
-compile cdbmake_add.c cdbmake.h alloc.h uint32.h
-	./compile cdbmake_add.c
-
-cdbmake_hash.o: \
-compile cdbmake_hash.c cdbmake.h uint32.h
-	./compile cdbmake_hash.c
-
-cdbmake_pack.o: \
-compile cdbmake_pack.c cdbmake.h uint32.h
-	./compile cdbmake_pack.c
-
-cdbmss.o: \
-compile cdbmss.c readwrite.h seek.h alloc.h cdbmss.h cdbmake.h \
-uint32.h substdio.h
-	./compile cdbmss.c
-
 check: \
 it man
 	./instcheck
@@ -330,10 +246,6 @@ clean: \
 TARGETS
 	rm -f `grep -v '^#' TARGETS`
 	cd tests && $(MAKE) clean
-
-coe.o: \
-compile coe.c coe.h
-	./compile coe.c
 
 commands.o: \
 compile commands.c commands.h
@@ -396,74 +308,11 @@ warn-auto.sh datemail.sh conf-qmail conf-break conf-split
 	> datemail
 	chmod 755 datemail
 
-datetime.a: \
-makelib datetime.o datetime_un.o
-	./makelib datetime.a datetime.o datetime_un.o
-
-datetime.o: \
-compile datetime.c datetime.h
-	./compile datetime.c
-
-datetime_un.o: \
-compile datetime_un.c datetime.h
-	./compile datetime_un.c
-
 direntry.h: \
 compile trydrent.c direntry.h1 direntry.h2
 	( ./compile trydrent.c >/dev/null 2>&1 \
 	&& cat direntry.h2 || cat direntry.h1 ) > direntry.h
 	rm -f trydrent.o
-
-dns.lib: \
-tryrsolv.c compile load socket.lib dns.o ipalloc.o ip.o stralloc.a \
-error.a fs.a str.a
-	( ( ./compile tryrsolv.c && ./load tryrsolv dns.o \
-	ipalloc.o ip.o stralloc.a error.a fs.a str.a \
-	-lresolv `cat socket.lib` ) >/dev/null 2>&1 \
-	&& echo -lresolv || exit 0 ) > dns.lib
-	rm -f tryrsolv.o tryrsolv
-
-dns.o: \
-compile dns.c ip.h ipalloc.h ip.h gen_alloc.h fmt.h alloc.h str.h \
-stralloc.h gen_alloc.h dns.h case.h
-	./compile dns.c
-
-dnsdoe.o: \
-compile dnsdoe.c substdio.h subfd.h substdio.h exit.h dns.h dnsdoe.h
-	./compile dnsdoe.c
-
-dnsfq: \
-load dnsfq.o dns.o dnsdoe.o ip.o ipalloc.o stralloc.a \
-substdio.a error.a str.a fs.a dns.lib socket.lib
-	./load dnsfq dns.o dnsdoe.o ip.o ipalloc.o stralloc.a \
-	substdio.a error.a str.a fs.a  `cat dns.lib` `cat socket.lib`
-
-dnsfq.o: \
-compile dnsfq.c substdio.h subfd.h substdio.h stralloc.h gen_alloc.h \
-dns.h dnsdoe.h ip.h ipalloc.h ip.h gen_alloc.h
-	./compile dnsfq.c
-
-dnsip: \
-load dnsip.o dns.o dnsdoe.o ip.o ipalloc.o stralloc.a \
-substdio.a error.a str.a fs.a dns.lib socket.lib
-	./load dnsip dns.o dnsdoe.o ip.o ipalloc.o stralloc.a \
-	substdio.a error.a str.a fs.a  `cat dns.lib` `cat socket.lib`
-
-dnsip.o: \
-compile dnsip.c substdio.h subfd.h substdio.h stralloc.h gen_alloc.h \
-dns.h dnsdoe.h ip.h ipalloc.h ip.h gen_alloc.h
-	./compile dnsip.c
-
-dnsptr: \
-load dnsptr.o dns.o dnsdoe.o ip.o ipalloc.o stralloc.a \
-substdio.a error.a str.a fs.a dns.lib socket.lib
-	./load dnsptr dns.o dnsdoe.o ip.o ipalloc.o stralloc.a \
-	substdio.a error.a str.a fs.a  `cat dns.lib` `cat socket.lib`
-
-dnsptr.o: \
-compile dnsptr.c substdio.h subfd.h substdio.h stralloc.h gen_alloc.h \
-str.h scan.h dns.h dnsdoe.h ip.h
-	./compile dnsptr.c
 
 dot-qmail.0: \
 dot-qmail.5
@@ -491,18 +340,6 @@ envread.o: \
 compile envread.c env.h str.h
 	./compile envread.c
 
-error.a: \
-makelib error_str.o error_temp.o
-	./makelib error.a error_str.o error_temp.o
-
-error_str.o: \
-compile error_str.c error.h
-	./compile error_str.c
-
-error_temp.o: \
-compile error_temp.c error.h
-	./compile error_temp.c
-
 except: \
 load except.o
 	./load except -lskarnet
@@ -514,41 +351,9 @@ except.o: \
 compile except.c wait.h
 	./compile except.c
 
-fd.a: \
-makelib fd_copy.o fd_move.o
-	./makelib fd.a fd_copy.o fd_move.o
-
-fd_copy.o: \
-compile fd_copy.c fd.h
-	./compile fd_copy.c
-
-fd_move.o: \
-compile fd_move.c fd.h
-	./compile fd_move.c
-
 fifo.o: \
 compile fifo.c hasmkffo.h fifo.h
 	./compile fifo.c
-
-fmt_str.o: \
-compile fmt_str.c fmt.h
-	./compile fmt_str.c
-
-fmt_strn.o: \
-compile fmt_strn.c fmt.h
-	./compile fmt_strn.c
-
-fmt_uint.o: \
-compile fmt_uint.c fmt.h
-	./compile fmt_uint.c
-
-fmt_uint0.o: \
-compile fmt_uint0.c fmt.h
-	./compile fmt_uint0.c
-
-fmt_ulong.o: \
-compile fmt_ulong.c fmt.h
-	./compile fmt_ulong.c
 
 fmtqfn.o: \
 compile fmtqfn.c fmtqfn.h fmt.h auto_split.h
@@ -583,10 +388,6 @@ compile getln.c getln.h
 getln2.o: \
 compile getln2.c substdio.h stralloc.h gen_alloc.h byte.h getln.h
 	./compile getln2.c
-
-getopt.a: \
-makelib subgetopt.o sgetopt.o
-	./makelib getopt.a subgetopt.o sgetopt.o
 
 gfrom.o: \
 compile gfrom.c str.h gfrom.h
@@ -734,15 +535,6 @@ instuidgid.o: \
 compile instuidgid.c uidgid.h auto_uids.h auto_users.h
 	./compile instuidgid.c
 
-ip.o: \
-compile ip.c fmt.h scan.h ip.h
-	./compile ip.c
-
-ipalloc.o: \
-compile ipalloc.c alloc.h gen_allocdefs.h ip.h ipalloc.h ip.h \
-gen_alloc.h oflops.h error.h
-	./compile ipalloc.c
-
 ipme.o: \
 compile ipme.c hassalen.h byte.h ip.h ipalloc.h ip.h gen_alloc.h \
 stralloc.h gen_alloc.h ipme.h ip.h ipalloc.h
@@ -876,18 +668,6 @@ myctime.o: \
 compile myctime.c fmt.h myctime.h
 	./compile myctime.c
 
-ndelay.a: \
-makelib ndelay.o ndelay_off.o
-	./makelib ndelay.a ndelay.o ndelay_off.o
-
-ndelay.o: \
-compile ndelay.c ndelay.h
-	./compile ndelay.c
-
-ndelay_off.o: \
-compile ndelay_off.c ndelay.h
-	./compile ndelay_off.c
-
 newfield.o: \
 compile newfield.c fmt.h date822fmt.h newfield.h
 	./compile newfield.c
@@ -898,32 +678,6 @@ chkbiofl.c compile load oflops_bi.h oflops_compat.h
 	./chkbiofl ) >/dev/null 2>&1 \
 	&& cat oflops_bi.h || cat oflops_compat.h ) > oflops.h
 	rm -f chkbiofl.o chkbiofl
-
-open.a: \
-makelib open_append.o open_excl.o open_read.o open_trunc.o \
-open_write.o
-	./makelib open.a open_append.o open_excl.o open_read.o \
-	open_trunc.o open_write.o
-
-open_append.o: \
-compile open_append.c open.h
-	./compile open_append.c
-
-open_excl.o: \
-compile open_excl.c open.h
-	./compile open_excl.c
-
-open_read.o: \
-compile open_read.c open.h
-	./compile open_read.c
-
-open_trunc.o: \
-compile open_trunc.c open.h
-	./compile open_trunc.c
-
-open_write.o: \
-compile open_write.c open.h
-	./compile open_write.c
 
 package: \
 it man
@@ -1190,9 +944,9 @@ compile qmail-qmqpc.c getln.h slurpclose.h auto_qmail.h control.h
 
 qmail-qmqpd: \
 load qmail-qmqpd.o received.o date822fmt.o qmail.o auto_qmail.o \
-datetime.a fs.a
+fs.a
 	./load qmail-qmqpd received.o date822fmt.o qmail.o \
-	auto_qmail.o datetime.a fs.a -lskarnet
+	auto_qmail.o fs.a -lskarnet
 
 qmail-qmqpd.0: \
 qmail-qmqpd.8
@@ -1203,9 +957,9 @@ compile qmail-qmqpd.c auto_qmail.h qmail.h now.h datetime.h fmt.h
 
 qmail-qmtpd: \
 load qmail-qmtpd.o rcpthosts.o control.o constmap.o received.o \
-date822fmt.o qmail.o datetime.a getln.a fs.a auto_qmail.o
+date822fmt.o qmail.o getln.a fs.a auto_qmail.o
 	./load qmail-qmtpd rcpthosts.o control.o constmap.o \
-	received.o date822fmt.o qmail.o datetime.a getln.a \
+	received.o date822fmt.o qmail.o getln.a \
 	fs.a auto_qmail.o -lskarnet
 
 qmail-qmtpd.0: \
@@ -1463,14 +1217,6 @@ remoteinfo.o: \
 compile remoteinfo.c fmt.h remoteinfo.h
 	./compile remoteinfo.c
 
-scan_8long.o: \
-compile scan_8long.c scan.h
-	./compile scan_8long.c
-
-scan_ulong.o: \
-compile scan_ulong.c scan.h
-	./compile scan_ulong.c
-
 select.h: \
 compile trysysel.c select.h1 select.h2
 	( ./compile trysysel.c >/dev/null 2>&1 \
@@ -1489,58 +1235,6 @@ setup: \
 it man
 	./instpackage
 	./instchown
-
-sgetopt.o: \
-compile sgetopt.c substdio.h subfd.h substdio.h sgetopt.h subgetopt.h \
-subgetopt.h
-	./compile sgetopt.c
-
-sig.a: \
-makelib sig_alarm.o sig_block.o sig_catch.o sig_pause.o sig_pipe.o \
-sig_child.o sig_hup.o sig_term.o sig_bug.o sig_misc.o
-	./makelib sig.a sig_alarm.o sig_block.o sig_catch.o \
-	sig_pause.o sig_pipe.o sig_child.o sig_hup.o sig_term.o \
-	sig_bug.o sig_misc.o
-
-sig_alarm.o: \
-compile sig_alarm.c sig.h
-	./compile sig_alarm.c
-
-sig_block.o: \
-compile sig_block.c sig.h hassgprm.h
-	./compile sig_block.c
-
-sig_bug.o: \
-compile sig_bug.c sig.h
-	./compile sig_bug.c
-
-sig_catch.o: \
-compile sig_catch.c sig.h hassgact.h
-	./compile sig_catch.c
-
-sig_child.o: \
-compile sig_child.c sig.h
-	./compile sig_child.c
-
-sig_hup.o: \
-compile sig_hup.c sig.h
-	./compile sig_hup.c
-
-sig_misc.o: \
-compile sig_misc.c sig.h
-	./compile sig_misc.c
-
-sig_pause.o: \
-compile sig_pause.c sig.h hassgprm.h
-	./compile sig_pause.c
-
-sig_pipe.o: \
-compile sig_pipe.c sig.h
-	./compile sig_pipe.c
-
-sig_term.o: \
-compile sig_term.c sig.h
-	./compile sig_term.c
 
 slurpclose.o: \
 compile slurpclose.c slurpclose.h
@@ -1569,73 +1263,6 @@ splogger.o: \
 compile splogger.c
 	./compile splogger.c
 
-str.a: \
-makelib str_chr.o \
-str_rchr.o str_start.o byte_chr.o byte_rchr.o byte_copy.o \
-byte_cr.o byte_zero.o
-	./makelib str.a \
-	str_chr.o str_rchr.o str_start.o byte_chr.o byte_rchr.o \
-	byte_copy.o byte_cr.o byte_zero.o
-
-str_chr.o: \
-compile str_chr.c str.h
-	./compile str_chr.c
-
-str_rchr.o: \
-compile str_rchr.c str.h
-	./compile str_rchr.c
-
-str_start.o: \
-compile str_start.c str.h
-	./compile str_start.c
-
-stralloc.a: \
-makelib stralloc_eady.o stralloc_pend.o stralloc_copy.o \
-stralloc_opys.o stralloc_opyb.o stralloc_cat.o stralloc_cats.o \
-stralloc_catb.o stralloc_arts.o
-	./makelib stralloc.a stralloc_eady.o stralloc_pend.o \
-	stralloc_copy.o stralloc_opys.o stralloc_opyb.o \
-	stralloc_cat.o stralloc_cats.o stralloc_catb.o \
-	stralloc_arts.o
-
-stralloc_arts.o: \
-compile stralloc_arts.c byte.h str.h stralloc.h gen_alloc.h
-	./compile stralloc_arts.c
-
-stralloc_cat.o: \
-compile stralloc_cat.c byte.h stralloc.h gen_alloc.h
-	./compile stralloc_cat.c
-
-stralloc_catb.o: \
-compile stralloc_catb.c stralloc.h gen_alloc.h byte.h error.h oflops.h
-	./compile stralloc_catb.c
-
-stralloc_cats.o: \
-compile stralloc_cats.c byte.h str.h stralloc.h gen_alloc.h
-	./compile stralloc_cats.c
-
-stralloc_copy.o: \
-compile stralloc_copy.c byte.h stralloc.h gen_alloc.h
-	./compile stralloc_copy.c
-
-stralloc_eady.o: \
-compile stralloc_eady.c alloc.h stralloc.h gen_alloc.h \
-gen_allocdefs.h oflops.h error.h
-	./compile stralloc_eady.c
-
-stralloc_opyb.o: \
-compile stralloc_opyb.c stralloc.h gen_alloc.h byte.h error.h oflops.h
-	./compile stralloc_opyb.c
-
-stralloc_opys.o: \
-compile stralloc_opys.c byte.h str.h stralloc.h gen_alloc.h
-	./compile stralloc_opys.c
-
-stralloc_pend.o: \
-compile stralloc_pend.c alloc.h stralloc.h gen_alloc.h \
-gen_allocdefs.h oflops.h error.h
-	./compile stralloc_pend.c
-
 strerr.a: \
 makelib strerr_sys.o strerr_die.o
 	./makelib strerr.a strerr_sys.o strerr_die.o
@@ -1648,56 +1275,17 @@ strerr_sys.o: \
 compile strerr_sys.c strerr.h
 	./compile strerr_sys.c
 
-subfderr.o: \
-compile subfderr.c readwrite.h substdio.h subfd.h substdio.h
-	./compile subfderr.c
-
-subfdin.o: \
-compile subfdin.c readwrite.h substdio.h subfd.h substdio.h
-	./compile subfdin.c
-
-subfdins.o: \
-compile subfdins.c readwrite.h substdio.h subfd.h substdio.h
-	./compile subfdins.c
-
-subfdout.o: \
-compile subfdout.c readwrite.h substdio.h subfd.h substdio.h
-	./compile subfdout.c
-
-subfdouts.o: \
-compile subfdouts.c readwrite.h substdio.h subfd.h substdio.h
-	./compile subfdouts.c
-
-subgetopt.o: \
-compile subgetopt.c subgetopt.h
-	./compile subgetopt.c
-
 substdi.o: \
 compile substdi.c substdio.h byte.h error.h
 	./compile substdi.c
-
-substdio.a: \
-makelib substdio.o substdi.o substdo.o subfderr.o subfdout.o \
-subfdouts.o subfdin.o subfdins.o substdio_copy.o
-	./makelib substdio.a substdio.o substdi.o substdo.o \
-	subfderr.o subfdout.o subfdouts.o subfdin.o subfdins.o \
-	substdio_copy.o
 
 substdio_copy.a: \
 makelib substdio_copy.o
 	./makelib substdio_copy.a substdio_copy.o
 
-substdio.o: \
-compile substdio.c substdio.h
-	./compile substdio.c
-
 substdio_copy.o: \
 compile substdio_copy.c substdio.h
 	./compile substdio_copy.c
-
-substdo.o: \
-compile substdo.c substdio.h str.h byte.h error.h
-	./compile substdo.c
 
 syslog.lib: \
 trysyslog.c compile load
@@ -1737,19 +1325,6 @@ compile tcpto_clean.c tcpto.h
 test: it
 	@cd tests && $(MAKE) test
 
-timeoutconn.o: \
-compile timeoutconn.c ndelay.h select.h error.h readwrite.h ip.h \
-byte.h timeoutconn.h
-	./compile timeoutconn.c
-
-timeoutread.o: \
-compile timeoutread.c timeoutread.h select.h error.h readwrite.h
-	./compile timeoutread.c
-
-timeoutwrite.o: \
-compile timeoutwrite.c timeoutwrite.h select.h error.h readwrite.h
-	./compile timeoutwrite.c
-
 token822.o: \
 compile token822.c token822.h oflops.h
 	./compile token822.c
@@ -1772,15 +1347,3 @@ auto_userq.o auto_userr.o auto_users.o auto_groupn.o auto_groupq.o gid.o uid.o
 	./makelib ids.a auto_usera.o auto_userd.o auto_userl.o auto_usero.o \
 	auto_userp.o auto_userq.o auto_userr.o auto_users.o auto_groupn.o \
 	auto_groupq.o gid.o uid.o
-
-wait.a: \
-makelib wait_pid.o wait_nohang.o
-	./makelib wait.a wait_pid.o wait_nohang.o
-
-wait_nohang.o: \
-compile wait_nohang.c haswaitp.h
-	./compile wait_nohang.c
-
-wait_pid.o: \
-compile wait_pid.c error.h haswaitp.h
-	./compile wait_pid.c
