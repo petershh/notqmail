@@ -721,10 +721,10 @@ compile instpackage.c open.h strerr.h hier.h
 	./compile instpackage.c
 
 instqueue: \
-load instqueue.o instfiles.o fifo.o hier.o auto_qmail.o auto_split.o strerr.a \
-substdio.a open.a error.a env.a str.a fs.a stralloc.a
-	./load instqueue instfiles.o fifo.o hier.o auto_qmail.o auto_split.o \
-	strerr.a substdio.a open.a error.a env.a str.a fs.a stralloc.a
+load instqueue.o instfiles.o hier.o auto_qmail.o auto_split.o \
+substdio_copy.a fs.a
+	./load instqueue instfiles.o hier.o auto_qmail.o auto_split.o \
+	substdio_copy.a fs.a -lskarnet
 
 instqueue.o: \
 compile instqueue.c open.h strerr.h hier.h

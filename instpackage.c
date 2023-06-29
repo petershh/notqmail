@@ -20,7 +20,7 @@ int main(void)
   PROG = "instpackage";
   fdsourcedir = open_read(".");
   if (fdsourcedir == -1)
-    strerr_diefu1sys(111, "unable to open current directory");
+    strerr_diefu1sys(111, "open current directory");
 
   umask(077);
   hier();
