@@ -2,7 +2,6 @@
 #define SUBSTDIO_H
 
 #include <sys/types.h>
-#if 0
 #include "deprecated.h"
 
 typedef struct substdio {
@@ -49,8 +48,5 @@ extern void substdio_seek();
   )
 
 extern int substdio_copy();
-#endif
-
-int buffer_copy(buffer *bout, buffer *bin);
 
 #endif
