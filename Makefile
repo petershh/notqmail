@@ -707,14 +707,14 @@ compile instchown.c hier.h
 	./compile instchown.c
 
 instfiles.o: \
-compile instfiles.c substdio.h
+compile instfiles.c
 	./compile instfiles.c
 
 instpackage: \
-load instpackage.o instfiles.o fifo.o hier.o auto_qmail.o auto_split.o strerr.a \
-substdio.a open.a error.a env.a str.a fs.a stralloc.a
-	./load instpackage instfiles.o fifo.o hier.o auto_qmail.o auto_split.o \
-	strerr.a substdio.a open.a error.a env.a str.a fs.a stralloc.a
+load instpackage.o instfiles.o hier.o auto_qmail.o auto_split.o \
+substdio_copy.a fs.a 
+	./load instpackage instfiles.o hier.o auto_qmail.o auto_split.o \
+	substdio_copy.a fs.a -lskarnet
 
 instpackage.o: \
 compile instpackage.c open.h strerr.h hier.h
