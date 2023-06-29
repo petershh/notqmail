@@ -141,7 +141,7 @@ void hier()
   c(auto_qmail,"bin","qmail-qmtpd",auto_uido,auto_gidq,0755);
   c(auto_qmail,"bin","qmail-smtpd",auto_uido,auto_gidq,0755);
   c(auto_qmail,"bin","sendmail",auto_uido,auto_gidq,0755);
-  c(auto_qmail,"bin","tcp-env",auto_uido,auto_gidq,0755);
+  /* c(auto_qmail,"bin","tcp-env",auto_uido,auto_gidq,0755); */
   c(auto_qmail,"bin","qreceipt",auto_uido,auto_gidq,0755);
   c(auto_qmail,"bin","qbiff",auto_uido,auto_gidq,0755);
   c(auto_qmail,"bin","forward",auto_uido,auto_gidq,0755);
@@ -200,8 +200,8 @@ void hier()
   c(auto_qmail,"man/cat1","qbiff.0",auto_uido,auto_gidq,0644);
   c(auto_qmail,"man/man1","preline.1",auto_uido,auto_gidq,0644);
   c(auto_qmail,"man/cat1","preline.0",auto_uido,auto_gidq,0644);
-  c(auto_qmail,"man/man1","tcp-env.1",auto_uido,auto_gidq,0644);
-  c(auto_qmail,"man/cat1","tcp-env.0",auto_uido,auto_gidq,0644);
+/*  c(auto_qmail,"man/man1","tcp-env.1",auto_uido,auto_gidq,0644); */
+/*  c(auto_qmail,"man/cat1","tcp-env.0",auto_uido,auto_gidq,0644); */
 
   c(auto_qmail,"man/man8","qmail-local.8",auto_uido,auto_gidq,0644);
   c(auto_qmail,"man/cat8","qmail-local.0",auto_uido,auto_gidq,0644);
