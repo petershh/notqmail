@@ -3,9 +3,7 @@
 
 #include <skalibs/ip46.h>
 #include <skalibs/genalloc.h>
-/*
-#include "ip.h"
-*/
+
 #include "ipalloc.h"
 
 extern genalloc ipme;

@@ -9,17 +9,6 @@
 #include <skalibs/env.h>
 #include <skalibs/sig.h>
 
-/*
-#include "stralloc.h"
-#include "substdio.h"
-#include "str.h"
-#include "env.h"
-#include "scan.h"
-#include "sig.h"
-#include "readwrite.h"
-#include "exit.h"
-*/
-
 #include "fmt.h"
 #include "qmail.h"
 #include "now.h"

@@ -13,32 +13,11 @@
 #include <skalibs/tai.h>
 #include <skalibs/unix-timed.h>
 
-/*
-#include "fd.h"
-#include "sig.h"
-#include "stralloc.h"
-#include "substdio.h"
-#include "alloc.h"
-#include "str.h"
-#include "byte.h"
-#include "now.h"
-#include "fmt.h"
-#include "exit.h"
-#include "readwrite.h"
-#include "timeoutread.h"
-#include "timeoutwrite.h"
-*/
-
 #include "wait.h"
 #include "commands.h"
 #include "noreturn.h"
 
 void _noreturn_ die() { _exit(1); }
-
-/*
-GEN_SAFE_TIMEOUTREAD(saferead,1200,fd,die())
-GEN_SAFE_TIMEOUTWRITE(safewrite,1200,fd,die())
-*/
 
 char boutbuf[128];
 buffer bout = BUFFER_INIT(buffer_write,1,boutbuf,sizeof(boutbuf));

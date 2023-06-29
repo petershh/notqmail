@@ -10,20 +10,6 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/stralloc.h>
 
-/*
-#include "sig.h"
-#include "env.h"
-#include "substdio.h"
-#include "stralloc.h"
-#include "subfd.h"
-#include "str.h"
-#include "error.h"
-#include "gen_alloc.h"
-#include "gen_allocdefs.h"
-#include "exit.h"
-#include "open.h"
-*/
-
 #include "getln.h"
 #include "hfield.h"
 #include "token822.h"

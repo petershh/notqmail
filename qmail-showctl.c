@@ -9,16 +9,6 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>
 
-/*
-#include "substdio.h"
-#include "subfd.h"
-#include "exit.h"
-#include "fmt.h"
-#include "str.h"
-#include "stralloc.h"
-#include "direntry.h"
-*/
-
 #include "control.h"
 #include "constmap.h"
 #include "uidgid.h"

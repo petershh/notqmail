@@ -8,23 +8,13 @@
 #include <skalibs/types.h>
 #include <skalibs/env.h>
 
-/*
-#include "sig.h"
-#include "substdio.h"
-#include "readwrite.h"
-#include "exit.h"
-#include "byte.h"
-#include "env.h"
-#include "str.h"
-*/
-
 #include "fmt.h"
 #include "auto_qmail.h"
 #include "qmail.h"
 #include "received.h"
 #include "now.h"
 
-void resources() { _exit(111); }
+void resources(void) { _exit(111); }
 
 ssize_t safewrite(int fd, const struct iovec *vbuf, unsigned int len)
 {

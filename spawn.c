@@ -17,21 +17,6 @@
 
 #include "spawn.h"
 
-/*
-#include "sig.h"
-#include "wait.h"
-#include "substdio.h"
-#include "byte.h"
-#include "str.h"
-#include "alloc.h"
-#include "stralloc.h"
-#include "select.h"
-#include "exit.h"
-#include "coe.h"
-#include "open.h"
-#include "error.h"
-*/
-
 #include "auto_qmail.h"
 #include "auto_uids.h"
 #include "auto_spawn.h"

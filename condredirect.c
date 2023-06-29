@@ -1,15 +1,3 @@
-#if 0
-#include "sig.h"
-#include "readwrite.h"
-#include "exit.h"
-#include "env.h"
-#include "error.h"
-#include "fork.h"
-#include "strerr.h"
-#include "fmt.h"
-
-#define FATAL "condredirect: fatal: "
-#endif
 #include <errno.h>
 
 #include <unistd.h>

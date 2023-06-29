@@ -11,24 +11,6 @@
 #include <skalibs/direntry.h>
 #include <skalibs/tai.h>
 
-/*
-#include "readwrite.h"
-#include "sig.h"
-#include "str.h"
-#include "direntry.h"
-#include "stralloc.h"
-#include "substdio.h"
-#include "subfd.h"
-#include "byte.h"
-#include "datetime.h"
-#include "scan.h"
-#include "fmt.h"
-#include "error.h"
-#include "exit.h"
-#include "datetime.h"
-#include "now.h"
-*/
-
 #include "getln.h"
 #include "auto_qmail.h"
 #include "fmtqfn.h"

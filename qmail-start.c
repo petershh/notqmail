@@ -4,12 +4,6 @@
 
 #include <skalibs/djbunix.h>
 
-/*
-#include "fd.h"
-#include "exit.h"
-#include "fork.h"
-*/
-
 #include "prot.h"
 #include "noreturn.h"
 #include "uidgid.h"

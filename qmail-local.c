@@ -20,27 +20,6 @@
 #include <skalibs/exec.h>
 #include <skalibs/tai.h>
 
-/*
-#include "readwrite.h"
-#include "sig.h"
-#include "env.h"
-#include "byte.h"
-#include "exit.h"
-#include "fork.h"
-#include "open.h"
-#include "seek.h"
-#include "strerr.h"
-#include "subfd.h"
-#include "sgetopt.h"
-#include "alloc.h"
-#include "error.h"
-#include "stralloc.h"
-#include "str.h"
-#include "case.h"
-#include "now.h"
-#include "datetime.h"
-*/
-
 #include "substdio.h"
 #include "getln.h"
 #include "fmt.h"

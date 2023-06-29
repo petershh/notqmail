@@ -6,15 +6,6 @@
 
 #include "rcpthosts.h"
 
-/*
-#include "case.h"
-#include "cdb.h"
-#include "byte.h"
-#include "open.h"
-#include "error.h"
-#include "stralloc.h"
-*/
-
 #include "control.h"
 #include "constmap.h"
 

@@ -1,13 +1,5 @@
 #include "qmail.h"
 
-#if 0
-#include "readwrite.h"
-#include "exit.h"
-#include "fork.h"
-#include "fd.h"
-#include "env.h"
-#endif
-
 #include <unistd.h>
 
 #include <skalibs/buffer.h>

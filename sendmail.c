@@ -8,16 +8,6 @@
 #include <skalibs/stralloc.h>
 #include <skalibs/exec.h>
 
-/*
-#include "sgetopt.h"
-#include "substdio.h"
-#include "subfd.h"
-#include "alloc.h"
-#include "exit.h"
-#include "env.h"
-#include "str.h"
-*/
-
 #include "auto_qmail.h"
 #include "noreturn.h"
 

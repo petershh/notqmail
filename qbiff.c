@@ -8,18 +8,6 @@
 #include <skalibs/env.h>
 #include <skalibs/djbunix.h>
 
-/*
-#include "readwrite.h"
-#include "stralloc.h"
-#include "substdio.h"
-#include "subfd.h"
-#include "open.h"
-#include "byte.h"
-#include "str.h"
-#include "env.h"
-#include "exit.h"
-*/
-
 #include "qtmp.h"
 #include "headerbody.h"
 #include "hfield.h"

@@ -13,18 +13,6 @@
 #include <skalibs/djbtime.h>
 #include <skalibs/bytestr.h>
 
-/*
-#include "readwrite.h"
-#include "sig.h"
-#include "exit.h"
-#include "open.h"
-#include "seek.h"
-#include "alloc.h"
-#include "substdio.h"
-#include "datetime.h"
-#include "now.h"
-*/
-
 #include "substdio.h"
 #include "fmt.h"
 #include "triggerpull.h"

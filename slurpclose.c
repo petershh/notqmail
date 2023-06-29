@@ -5,12 +5,6 @@
 
 #include "slurpclose.h"
 
-/*
-#include "stralloc.h"
-#include "readwrite.h"
-#include "error.h"
-*/
-
 int slurpclose(int fd, stralloc *sa, int bufsize)
 {
   int r;

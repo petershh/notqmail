@@ -3,12 +3,6 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/iopause.h>
 
-/*
-#include "select.h"
-#include "open.h"
-#include "hasnpbg1.h"
-*/
-
 #include "trigger.h"
 
 static int fd = -1;

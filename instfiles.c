@@ -12,16 +12,6 @@
 #include <skalibs/bytestr.h>
 #include <skalibs/djbunix.h>
 
-/*
-#include "strerr.h"
-#include "env.h"
-#include "error.h"
-#include "fifo.h"
-#include "open.h"
-#include "str.h"
-#include "stralloc.h"
-*/
-
 #include "substdio.h"
 
 int fdsourcedir = -1;

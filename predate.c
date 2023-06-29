@@ -5,14 +5,6 @@
 #include <unistd.h>
 
 #include <time.h>
-/*
-#include "fork.h"
-#include "fd.h"
-#include "fmt.h"
-#include "sig.h"
-#include "subfd.h"
-#include "readwrite.h"
-*/
 
 #include <skalibs/buffer.h>
 #include <skalibs/strerr.h>
@@ -27,8 +19,6 @@
 #include "strerr.h"
 #include "wait.h"
 #include "substdio.h"
-
-#define FATAL "predate: fatal: "
 
 static char *montab[12] = {
 "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"

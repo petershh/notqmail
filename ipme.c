@@ -13,11 +13,6 @@
 #endif
 #include <unistd.h>
 #include "hassalen.h"
-/*
-#include "byte.h"
-#include "ip.h"
-#include "stralloc.h"
-*/
 
 #include <skalibs/ip46.h>
 #include <skalibs/genalloc.h>

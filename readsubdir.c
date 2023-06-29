@@ -6,11 +6,6 @@
 
 #include "readsubdir.h"
 
-/*
-#include "scan.h"
-#include "str.h"
-*/
-
 #include "fmt.h"
 #include "auto_split.h"
 

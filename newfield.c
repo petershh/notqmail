@@ -2,10 +2,6 @@
 #include <time.h>
 
 #include <unistd.h>
-/*
-#include "stralloc.h"
-#include "datetime.h"
-*/
 
 #include <skalibs/stralloc.h>
 #include <skalibs/types.h>

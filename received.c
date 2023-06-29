@@ -6,12 +6,6 @@
 
 #include "received.h"
 
-/*
-#include "fmt.h"
-#include "now.h"
-#include "datetime.h"
-*/
-
 #include "qmail.h"
 #include "date822fmt.h"
 

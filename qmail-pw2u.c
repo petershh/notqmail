@@ -11,21 +11,6 @@
 #include <skalibs/types.h>
 #include <skalibs/djbunix.h>
 
-/*
-#include "byte.h"
-#include "substdio.h"
-#include "readwrite.h"
-#include "subfd.h"
-#include "sgetopt.h"
-#include "stralloc.h"
-#include "fmt.h"
-#include "str.h"
-#include "scan.h"
-#include "open.h"
-#include "error.h"
-#include "exit.h"
-*/
-
 #include "control.h"
 #include "constmap.h"
 #include "getln.h"

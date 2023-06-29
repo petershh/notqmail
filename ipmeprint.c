@@ -1,10 +1,3 @@
-/*
-#include "subfd.h"
-#include "substdio.h"
-#include "ip.h"
-#include "ipme.h"
-#include "exit.h"
-*/
 #include <unistd.h>
 
 #include <skalibs/buffer.h>

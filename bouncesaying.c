@@ -1,14 +1,3 @@
-#if 0
-#include "fork.h"
-#include "strerr.h"
-#include "error.h"
-#include "wait.h"
-#include "sig.h"
-#include "exit.h"
-#include "error_temp.h"
-
-#define FATAL "bouncesaying: fatal: "
-#endif
 #include <errno.h>
 
 #include <unistd.h>

@@ -3,12 +3,6 @@
 #include <skalibs/bytestr.h>
 #include <skalibs/stralloc.h>
 
-/*
-#include "error.h"
-#include "stralloc.h"
-#include "str.h"
-*/
-
 #include "quote.h"
 
 #include "oflops.h"

@@ -14,27 +14,6 @@
 #include <skalibs/ip46.h>
 #include <skalibs/unix-timed.h>
 
-/*
-#include "sig.h"
-#include "readwrite.h"
-#include "stralloc.h"
-#include "substdio.h"
-#include "alloc.h"
-#include "datetime.h"
-#include "error.h"
-#include "ip.h"
-#include "str.h"
-#include "fmt.h"
-#include "scan.h"
-#include "byte.h"
-#include "case.h"
-#include "env.h"
-#include "now.h"
-#include "exit.h"
-#include "timeoutread.h"
-#include "timeoutwrite.h"
-*/
-
 #include "auto_qmail.h"
 #include "control.h"
 #include "received.h"
@@ -47,10 +26,6 @@
 #define MAXHOPS 100
 unsigned int databytes = 0;
 int timeout = 1200;
-
-/*
-GEN_SAFE_TIMEOUTWRITE(safewrite,timeout,fd,_exit(1))
-*/
 
 ssize_t safewrite(int fd, const struct iovec *vbuf, unsigned int n) {
     ssize_t r = writev(fd, vbuf, n);

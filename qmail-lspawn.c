@@ -10,20 +10,6 @@
 #include <skalibs/bytestr.h>
 #include <skalibs/error.h>
 
-/*
-#include "fd.h"
-#include "substdio.h"
-#include "stralloc.h"
-#include "scan.h"
-#include "exit.h"
-#include "fork.h"
-#include "error.h"
-#include "byte.h"
-#include "cdb.h"
-#include "case.h"
-#include "open.h"
-*/
-
 #include "spawn.h"
 #include "prot.h"
 #include "wait.h"

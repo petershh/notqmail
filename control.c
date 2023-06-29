@@ -10,16 +10,6 @@
 #include "control.h"
 #include "getln.h"
 
-#if 0
-#include "readwrite.h"
-#include "open.h"
-#include "stralloc.h"
-#include "substdio.h"
-#include "error.h"
-#include "alloc.h"
-#include "scan.h"
-#endif
-
 static char inbuf[64];
 static stralloc line = STRALLOC_ZERO;
 static stralloc me = STRALLOC_ZERO;

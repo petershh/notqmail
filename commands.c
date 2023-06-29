@@ -1,10 +1,4 @@
 #include "commands.h"
-#if 0
-#include "substdio.h"
-#include "stralloc.h"
-#include "str.h"
-#include "case.h"
-#endif
 
 #include <skalibs/stralloc.h>
 #include <skalibs/buffer.h>

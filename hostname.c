@@ -2,13 +2,6 @@
 
 #include <skalibs/buffer.h>
 
-/*
-#include "substdio.h"
-#include "subfd.h"
-#include "readwrite.h"
-*/
-
-
 char host[256];
 
 int main(void)

@@ -2,9 +2,7 @@
 #define IPALLOC_H
 
 #include <skalibs/ip46.h>
-/*
-#include "ip.h"
-*/
+
 struct ip_mx { ip46 ip; int pref; } ;
 
 #define IP_MX_ZERO { IP46_ZERO, 0 }

@@ -4,11 +4,6 @@
 
 #include <skalibs/buffer.h>
 
-/*
-#include "subfd.h"
-#include "substdio.h"
-*/
-
 #include "uidgid.h"
 
 uid_t

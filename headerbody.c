@@ -7,10 +7,6 @@
 
 #include "hfield.h"
 #include "getln.h"
-/*
-#include "stralloc.h"
-#include "substdio.h"
-*/
 
 static int getsa(buffer *b, stralloc *sa, int *match)
 {

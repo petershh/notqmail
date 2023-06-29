@@ -4,12 +4,6 @@
 
 #include "token822.h"
 
-/*
-#include "stralloc.h"
-#include "str.h"
-#include "gen_allocdefs.h"
-*/
-
 static struct token822 comma = { TOKEN822_COMMA };
 
 void token822_reverse(genalloc *ta)
@@ -28,12 +22,6 @@ void token822_reverse(genalloc *ta)
    token822_s(ta)[n - i] = temp;
   }
 }
-
-/*
-GEN_ALLOC_readyplus(token822_alloc,struct token822,t,len,a,30,token822_readyplus)
-GEN_ALLOC_ready(token822_alloc,struct token822,t,len,a,30,token822_ready)
-GEN_ALLOC_append(token822_alloc,struct token822,t,len,a,30,token822_readyplus,token822_append)
-*/
 
 static int needspace(int t1, int t2)
 {

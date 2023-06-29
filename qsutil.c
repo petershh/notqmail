@@ -5,12 +5,6 @@
 
 #include "qsutil.h"
 
-/*
-#include "stralloc.h"
-#include "readwrite.h"
-#include "substdio.h"
-*/
-
 static stralloc foo = STRALLOC_ZERO;
 
 static char errbuf[1];

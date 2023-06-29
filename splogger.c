@@ -7,16 +7,6 @@
 #include <skalibs/bytestr.h>
 #include <skalibs/types.h>
 
-/*
-#include "error.h"
-#include "substdio.h"
-#include "subfd.h"
-#include "exit.h"
-#include "str.h"
-#include "scan.h"
-#include "fmt.h"
-*/
-
 char buf[800]; /* syslog truncates long lines (or crashes); GPACIC */
 int bufpos = 0; /* 0 <= bufpos < sizeof(buf) */
 int flagcont = 0;

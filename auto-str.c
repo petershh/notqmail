@@ -1,26 +1,9 @@
-#if 0
-#include <ctype.h>
-#include "substdio.h"
-#include "readwrite.h"
-#include "exit.h"
-#endif
-
 #include <ctype.h>
 
 #include <unistd.h>
 
 #include <skalibs/buffer.h>
 
-/*
-char buf1[256];
-substdio ss1 = SUBSTDIO_FDBUF(write,1,buf1,sizeof(buf1));
-
-void puts(s)
-char *s;
-{
-  if (substdio_puts(&ss1,s) == -1) _exit(111);
-}
-*/
 // check if a given character can be printed unquoted in a C string
 // does not accept digits as they may be hardly visible between octal encoded chars
 static int is_legible(unsigned char ch)

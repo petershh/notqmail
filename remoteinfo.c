@@ -1,6 +1,3 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <unistd.h>
 
 #include <skalibs/ip46.h>
@@ -13,30 +10,10 @@
 
 #include "remoteinfo.h"
 
-/*
-#include "byte.h"
-#include "substdio.h"
-#include "ip.h"
-#include "timeoutconn.h"
-#include "timeoutread.h"
-#include "timeoutwrite.h"
-*/
-
 #include "fmt.h"
 
 static char line[999];
 static int t;
-
-/*
-static ssize_t mywrite(int fd, const void *buf, size_t len)
-{
-  return timeoutwrite(t,fd,buf,len);
-}
-static ssize_t myread(int fd, void *buf, size_t len)
-{
-  return timeoutread(t,fd,buf,len);
-}
-*/
 
 char *remoteinfo_get(ip46 *ipr, unsigned long rp, ip46 *ipl, unsigned long lp,
         int timeout)

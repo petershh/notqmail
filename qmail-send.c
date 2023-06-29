@@ -19,27 +19,6 @@
 #include <skalibs/tai.h>
 #include <skalibs/genalloc.h>
 
-/*
-#include "readwrite.h"
-#include "sig.h"
-#include "direntry.h"
-#include "select.h"
-#include "open.h"
-#include "seek.h"
-#include "exit.h"
-#include "ndelay.h"
-#include "substdio.h"
-#include "alloc.h"
-#include "error.h"
-#include "stralloc.h"
-#include "str.h"
-#include "byte.h"
-#include "fmt.h"
-#include "scan.h"
-#include "case.h"
-#include "now.h"
-*/
-
 #include "control.h"
 #include "lock.h"
 #include "getln.h"

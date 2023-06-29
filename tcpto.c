@@ -7,16 +7,6 @@
 #include <skalibs/bytestr.h>
 #include <skalibs/tai.h>
 
-/*
-#include "open.h"
-#include "seek.h"
-#include "ip.h"
-#include "byte.h"
-#include "readwrite.h"
-#include "now.h"
-#include "datetime.h"
-*/
-
 #include "tcpto.h"
 #include "lock.h"
 

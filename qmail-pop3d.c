@@ -17,21 +17,6 @@
 #include <skalibs/bytestr.h>
 #include <skalibs/unix-timed.h>
 
-/*
-#include "sig.h"
-#include "stralloc.h"
-#include "substdio.h"
-#include "alloc.h"
-#include "open.h"
-#include "scan.h"
-#include "fmt.h"
-#include "str.h"
-#include "exit.h"
-#include "readwrite.h"
-#include "timeoutread.h"
-#include "timeoutwrite.h"
-*/
-
 #include "commands.h"
 #include "getln.h"
 #include "prioq.h"

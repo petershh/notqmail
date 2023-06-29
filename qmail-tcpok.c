@@ -4,13 +4,6 @@
 #include <skalibs/buffer.h>
 #include <skalibs/djbunix.h>
 
-/*
-#include "strerr.h"
-#include "substdio.h"
-#include "open.h"
-#include "readwrite.h"
-*/
-
 #include "lock.h"
 #include "auto_qmail.h"
 

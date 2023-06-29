@@ -14,20 +14,6 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/unix-timed.h>
 
-/*
-#include "substdio.h"
-#include "readwrite.h"
-#include "exit.h"
-#include "stralloc.h"
-#include "error.h"
-#include "sig.h"
-#include "ip.h"
-#include "timeoutconn.h"
-#include "timeoutread.h"
-#include "timeoutwrite.h"
-#include "fmt.h"
-*/
-
 #include "getln.h"
 #include "auto_qmail.h"
 #include "slurpclose.h"
@@ -48,10 +34,6 @@ void die_format(void) { _exit(91); }
 
 int lasterror = 55;
 int qmqpfd;
-/*
-GEN_SAFE_TIMEOUTREAD(saferead,60,qmqpfd,die_conn())
-GEN_SAFE_TIMEOUTWRITE(safewrite,60,qmqpfd,die_conn())
-*/
 
 /* TODO are they that safe? */
 static ssize_t saferead(int fd, const struct iovec *vbuf, unsigned int n)

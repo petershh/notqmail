@@ -3,12 +3,6 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/buffer.h>
 
-/*
-#include "open.h"
-#include "substdio.h"
-#include "readwrite.h"
-*/
-
 #include "tcpto.h"
 
 char tcpto_cleanbuf[1024];

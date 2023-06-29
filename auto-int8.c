@@ -1,24 +1,5 @@
-#if 0
-#include "substdio.h"
-#include "readwrite.h"
-#include "exit.h"
-#include "scan.h"
-#include "fmt.h"
-#endif
-
 #include <skalibs/types.h>
 #include <skalibs/buffer.h>
-
-/*
-char buf1[256];
-substdio ss1 = SUBSTDIO_FDBUF(write,1,buf1,sizeof(buf1));
-
-void puts(s)
-char *s;
-{
-  if (substdio_puts(&ss1,s) == -1) _exit(111);
-}
-*/
 
 int main(int argc, char **argv)
 {

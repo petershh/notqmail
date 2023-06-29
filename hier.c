@@ -10,10 +10,6 @@
 #include "auto_uids.h"
 #include "fmt.h"
 
-/*
-#include "fifo.h"
-*/
-
 char buf[100 + ULONG_FMT];
 
 void dsplit(char *base, /* must be under 100 bytes */

@@ -11,14 +11,6 @@
 #include <skalibs/direntry.h>
 #include <skalibs/genalloc.h>
 
-/*
-#include "env.h"
-#include "stralloc.h"
-#include "str.h"
-#include "now.h"
-#include "datetime.h"
-*/
-
 #include "maildir.h"
 
 #include "prioq.h"

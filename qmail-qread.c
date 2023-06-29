@@ -14,18 +14,6 @@
 #include <skalibs/tai.h>
 #include <skalibs/djbtime.h>
 
-/*
-#include "stralloc.h"
-#include "substdio.h"
-#include "subfd.h"
-#include "str.h"
-#include "open.h"
-#include "readwrite.h"
-#include "error.h"
-#include "exit.h"
-#include "datetime.h"
-*/
-
 #include "fmt.h"
 #include "getln.h"
 #include "fmtqfn.h"

@@ -10,17 +10,6 @@
 #include <skalibs/cdbmake.h>
 #include <skalibs/djbunix.h>
 
-/*
-#include "case.h"
-#include "strerr.h"
-#include "stralloc.h"
-#include "substdio.h"
-#include "exit.h"
-#include "readwrite.h"
-#include "open.h"
-#include "cdbmss.h"
-*/
-
 #include "getln.h"
 #include "auto_qmail.h"
 

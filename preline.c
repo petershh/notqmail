@@ -1,15 +1,3 @@
-/*
-#include "fd.h"
-#include "sgetopt.h"
-#include "readwrite.h"
-#include "strerr.h"
-#include "substdio.h"
-#include "fork.h"
-#include "env.h"
-#include "sig.h"
-#include "error.h"
-*/
-
 #include <unistd.h>
 #include <errno.h>
 
@@ -23,8 +11,6 @@
 
 #include "wait.h"
 #include "substdio.h"
-
-#define FATAL "preline: fatal: "
 
 void die_usage()
 {

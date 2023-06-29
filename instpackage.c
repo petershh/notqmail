@@ -6,11 +6,6 @@
 #include <skalibs/djbunix.h>
 #include <skalibs/strerr.h>
 
-/*
-#include "open.h"
-#include "strerr.h"
-*/
-
 #define FATAL "instpackage: fatal: "
 
 extern int fdsourcedir;

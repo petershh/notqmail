@@ -7,13 +7,6 @@
 #include <skalibs/error.h>
 
 #include "wait.h"
-/*
-#include "fork.h"
-#include "strerr.h"
-#include "error.h"
-#include "exit.h"
-#define FATAL "except: fatal: "
-*/
 
 #define USAGE "except program [ arg ... ]"
 

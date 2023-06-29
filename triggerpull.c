@@ -4,11 +4,6 @@
 
 #include "triggerpull.h"
 
-/*
-#include "ndelay.h"
-#include "open.h"
-*/
-
 void triggerpull(void)
 {
  int fd;

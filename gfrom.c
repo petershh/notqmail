@@ -1,8 +1,6 @@
 #include <skalibs/bytestr.h>
 #include "gfrom.h"
-/*
-#include "str.h"
-*/
+
 int gfrom(char *s, int len)
 {
  while ((len > 0) && (*s == '>')) { ++s; --len; }

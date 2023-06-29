@@ -12,19 +12,6 @@
 #include <skalibs/tai.h>
 #include <skalibs/types.h>
 
-/*
-#include "substdio.h"
-#include "subfd.h"
-#include "byte.h"
-#include "fmt.h"
-#include "ip.h"
-#include "open.h"
-#include "error.h"
-#include "exit.h"
-#include "datetime.h"
-#include "now.h"
-*/
-
 #include "auto_qmail.h"
 #include "lock.h"
 

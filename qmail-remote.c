@@ -21,27 +21,6 @@
 
 #include <s6-dns/s6dns.h>
 
-/*
-#include "sig.h"
-#include "stralloc.h"
-#include "substdio.h"
-#include "subfd.h"
-#include "scan.h"
-#include "case.h"
-#include "error.h"
-#include "dns.h"
-#include "ip.h"
-#include "gen_alloc.h"
-#include "gen_allocdefs.h"
-#include "str.h"
-#include "now.h"
-#include "exit.h"
-#include "readwrite.h"
-#include "timeoutconn.h"
-#include "timeoutread.h"
-#include "timeoutwrite.h"
-*/
-
 #include "auto_qmail.h"
 #include "quote.h"
 #include "control.h"
@@ -55,11 +34,6 @@
 
 #define PORT_SMTP 25 /* silly rabbit, /etc/services is for users */
 unsigned long port = PORT_SMTP;
-
-/*
-GEN_ALLOC_typedef(saa,stralloc,sa,len,a)
-GEN_ALLOC_readyplus(saa,stralloc,sa,len,a,10,saa_readyplus)
-*/
 
 static stralloc sauninit = STRALLOC_ZERO;
 
@@ -191,11 +165,6 @@ void _noreturn_ dropped(void) {
 int timeoutconnect = 60;
 int smtpfd;
 int timeout = 1200;
-
-/*
-GEN_SAFE_TIMEOUTREAD(saferead,timeout,smtpfd,dropped())
-GEN_SAFE_TIMEOUTWRITE(safewrite,timeout,smtpfd,dropped())
-*/
 
 ssize_t saferead(int fd, struct iovec const *vbuf, unsigned int n)
 {
@@ -552,6 +521,7 @@ int main(int argc, char **argv)
       dns_ips_with_pref(&ip, mx_name, mx_name_len, rrs_arr[i].preference);
     }
   }
+  s6dns_finish();
 
   if (genalloc_len(struct ip_mx, &ip) <= 0) perm_nomx();
 

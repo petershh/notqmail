@@ -11,23 +11,6 @@
 #include <skalibs/types.h>
 #include <skalibs/tai.h>
 
-/*
-#include "sig.h"
-#include "substdio.h"
-#include "stralloc.h"
-#include "subfd.h"
-#include "sgetopt.h"
-#include "str.h"
-#include "fmt.h"
-#include "env.h"
-#include "gen_alloc.h"
-#include "gen_allocdefs.h"
-#include "error.h"
-#include "exit.h"
-#include "datetime.h"
-#include "now.h"
-*/
-
 #include "getln.h"
 #include "hfield.h"
 #include "token822.h"

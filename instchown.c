@@ -6,11 +6,6 @@
 
 #include <skalibs/strerr.h>
 
-/*
-#include "strerr.h"
-#include "error.h"
-*/
-
 #include "hier.h"
 
 extern void init_uidgid();

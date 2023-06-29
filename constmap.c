@@ -3,12 +3,6 @@
 
 #include "constmap.h"
 
-#if 0
-#include "alloc.h"
-#include "case.h"
-#endif
-
-
 static constmap_hash hash(char *s, int len)
 {
   unsigned char ch;

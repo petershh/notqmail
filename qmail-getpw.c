@@ -9,18 +9,6 @@
 #include <skalibs/types.h>
 #include <skalibs/buffer.h>
 
-/*
-#include "readwrite.h"
-#include "substdio.h"
-#include "subfd.h"
-#include "error.h"
-#include "exit.h"
-#include "byte.h"
-#include "str.h"
-#include "case.h"
-#include "fmt.h"
-*/
-
 #include "auto_users.h"
 #include "auto_break.h"
 #include "qlx.h"

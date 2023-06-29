@@ -1,8 +1,3 @@
-/*
-#include "substdio.h"
-#include "subfd.h"
-*/
-
 #include <unistd.h>
 
 #include <skalibs/buffer.h>

@@ -7,15 +7,6 @@
 #include <skalibs/env.h>
 #include <skalibs/error.h>
 
-/*
-#include "fd.h"
-#include "substdio.h"
-#include "exit.h"
-#include "fork.h"
-#include "error.h"
-#include "env.h"
-*/
-
 #include "spawn.h"
 #include "wait.h"
 #include "tcpto.h"

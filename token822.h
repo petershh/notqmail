@@ -10,11 +10,6 @@ struct token822
  }
 ;
 
-/*
-#include "gen_alloc.h"
-GEN_ALLOC_typedef(token822_alloc,struct token822,t,len,a)
-*/
-
 #define token822_s(a) genalloc_s(struct token822, a)
 #define token822_ready(a, n) genalloc_ready(struct token822, a, n)
 #define token822_readyplus(a, n) genalloc_ready(struct token822, a, n)
@@ -32,9 +27,6 @@ extern int token822_unquote();
 extern int token822_unparse();
 extern void token822_free();
 extern void token822_reverse();
-/* extern int token822_ready();
-extern int token822_readyplus();
-extern int token822_append(); */
 
 #define TOKEN822_ATOM 1
 #define TOKEN822_QUOTE 2

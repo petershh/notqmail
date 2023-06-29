@@ -2,13 +2,6 @@
 #include <skalibs/tai.h>
 
 #include "prioq.h"
-/*
-#include "gen_allocdefs.h"
-*/
-
-/*
-GEN_ALLOC_readyplus(prioq,struct prioq_elt,p,len,a,100,prioq_readyplus)
-*/
 
 int prioq_insert(genalloc *pq, struct prioq_elt *pe)
 {

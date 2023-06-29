@@ -8,16 +8,6 @@
 #include <skalibs/sig.h>
 
 #include "qmail.h"
-/*
-#include "sig.h"
-#include "readwrite.h"
-#include "env.h"
-#include "strerr.h"
-#include "substdio.h"
-#include "fmt.h"
-*/
-
-#define FATAL "forward: fatal: "
 
 void die_nomem() { strerr_dief1x(111, "out of memory"); }
 

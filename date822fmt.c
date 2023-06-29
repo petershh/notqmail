@@ -3,9 +3,6 @@
 #include <skalibs/types.h>
 
 #include "date822fmt.h"
-/*
-#include "datetime.h"
-*/
 #include "fmt.h"
 
 static char *montab[12] = {

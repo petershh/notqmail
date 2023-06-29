@@ -4,20 +4,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-/*
-#include "readwrite.h"
-#include "env.h"
-#include "subfd.h"
-#include "error.h"
-#include "open.h"
-#include "stralloc.h"
-#include "lock.h"
-#include "str.h"
-
-extern int rename(const char *, const char *);
-*/
-
-
 #include <skalibs/stralloc.h>
 #include <skalibs/buffer.h>
 #include <skalibs/strerr.h>
