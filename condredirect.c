@@ -11,7 +11,6 @@
 #include <skalibs/env.h>
 #include <skalibs/types.h>
 
-#include "seek.h"
 #include "buffer_copy.h"
 #include "qmail.h"
 #include "wait.h"
@@ -59,7 +58,7 @@ int main(int argc, char **argv)
       _exit(0);
   }
 
-  if (seek_begin(0) == -1)
+  if (lseek(0, 0, SEEK_SET) == -1)
     strerr_diefu1sys(111, "rewind");
   sig_catch(SIGPIPE, SIG_IGN);
  

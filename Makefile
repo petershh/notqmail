@@ -264,7 +264,7 @@ condredirect.0: \
 condredirect.1
 
 condredirect.o: \
-compile condredirect.c wait.h seek.h qmail.h buffer_copy.h
+compile condredirect.c wait.h qmail.h buffer_copy.h
 	./compile condredirect.c
 
 config: \
