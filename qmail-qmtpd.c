@@ -8,10 +8,10 @@
 #include <skalibs/types.h>
 #include <skalibs/env.h>
 #include <skalibs/sig.h>
+#include <skalibs/tai.h>
 
 #include "fmt.h"
 #include "qmail.h"
-#include "now.h"
 #include "noreturn.h"
 #include "rcpthosts.h"
 #include "auto_qmail.h"
@@ -94,6 +94,7 @@ main(void)
   char *result;
   char const *x;
   unsigned long u;
+  tai now;
  
   sig_ignore(SIGPIPE);
   sig_catch(SIGALRM, resources);
@@ -242,10 +243,11 @@ main(void)
     if (*result)
       len = str_len(result);
     else {
+      tai_now(&now);
       /* success! */
       len = 0;
       len += fmt_str(buf2 + len,"Kok ");
-      len += ulong_fmt(buf2 + len,(unsigned long) now());
+      len += ulong_fmt(buf2 + len,(unsigned long) tai_sec(&now));
       len += fmt_str(buf2 + len," qp ");
       len += ulong_fmt(buf2 + len,qp);
       buf2[len] = 0;

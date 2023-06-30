@@ -8,8 +8,6 @@
 #include <skalibs/buffer.h>
 #include <skalibs/functypes.h>
 
-#include "substdio.h"
-
 struct qmail {
   int flagerr;
   unsigned long pid;

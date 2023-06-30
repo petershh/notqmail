@@ -7,12 +7,12 @@
 #include <skalibs/bytestr.h>
 #include <skalibs/types.h>
 #include <skalibs/env.h>
+#include <skalibs/tai.h>
 
 #include "fmt.h"
 #include "auto_qmail.h"
 #include "qmail.h"
 #include "received.h"
-#include "now.h"
 
 void resources() { _exit(111); }
 
@@ -118,6 +118,7 @@ main(void)
   unsigned long qp;
   unsigned long len;
   char ch;
+  tai now;
 
   sig_ignore(SIGPIPE);
   sig_catch(SIGALRM, resources_handler);
@@ -160,9 +161,10 @@ main(void)
 
   result = qmail_close(&qq);
 
+  tai_now(&now);
   if (!*result) {
     len = fmt_str(buf,"Kok ");
-    len += ulong_fmt(buf + len,(unsigned long) now());
+    len += ulong_fmt(buf + len,(unsigned long) tai_sec(&now));
     len += fmt_str(buf + len," qp ");
     len += ulong_fmt(buf + len,qp);
     buf[len] = 0;

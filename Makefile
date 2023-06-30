@@ -226,7 +226,7 @@ bouncesaying.0: \
 bouncesaying.1
 
 bouncesaying.o: \
-compile bouncesaying.c fork.h strerr.h error.h wait.h sig.h exit.h
+compile bouncesaying.c wait.h
 	./compile bouncesaying.c
 
 check: \
@@ -286,7 +286,7 @@ warn-auto.sh config-fast.sh conf-qmail conf-break conf-split
 	chmod 755 config-fast
 
 constmap.o: \
-compile constmap.c constmap.h alloc.h case.h
+compile constmap.c constmap.h
 	./compile constmap.c
 
 control.o: \
@@ -368,7 +368,7 @@ forward.0: \
 forward.1
 
 forward.o: \
-compile forward.c sig.h qmail.h \
+compile forward.c qmail.h
 	./compile forward.c
 
 fs.a: \
@@ -512,7 +512,7 @@ buffer_copy.a fs.a
 	buffer_copy.a fs.a -lskarnet
 
 instpackage.o: \
-compile instpackage.c open.h strerr.h hier.h
+compile instpackage.c hier.h
 	./compile instpackage.c
 
 instqueue: \
@@ -522,7 +522,7 @@ buffer_copy.a fs.a
 	buffer_copy.a fs.a -lskarnet
 
 instqueue.o: \
-compile instqueue.c open.h strerr.h hier.h
+compile instqueue.c hier.h
 	./compile instqueue.c
 
 instuidgid.o: \
@@ -530,8 +530,7 @@ compile instuidgid.c uidgid.h auto_uids.h auto_users.h
 	./compile instuidgid.c
 
 ipme.o: \
-compile ipme.c hassalen.h byte.h ip.h ipalloc.h ip.h gen_alloc.h \
-stralloc.h gen_alloc.h ipme.h ip.h ipalloc.h
+compile ipme.c hassalen.h ipalloc.h ipme.h
 	./compile ipme.c
 
 ipmeprint: \
@@ -945,7 +944,7 @@ qmail-qmqpd.0: \
 qmail-qmqpd.8
 
 qmail-qmqpd.o: \
-compile qmail-qmqpd.c auto_qmail.h qmail.h now.h datetime.h fmt.h
+compile qmail-qmqpd.c auto_qmail.h qmail.h fmt.h
 	./compile qmail-qmqpd.c
 
 qmail-qmtpd: \
@@ -959,7 +958,7 @@ qmail-qmtpd.0: \
 qmail-qmtpd.8
 
 qmail-qmtpd.o: \
-compile qmail-qmtpd.c qmail.h now.h datetime.h fmt.h rcpthosts.h \
+compile qmail-qmtpd.c qmail.h fmt.h rcpthosts.h \
 auto_qmail.h control.h received.h
 	./compile qmail-qmtpd.c
 
@@ -1134,8 +1133,7 @@ qmail-tcpto.0: \
 qmail-tcpto.8
 
 qmail-tcpto.o: \
-compile qmail-tcpto.c subfd.h buffer_copy.h auto_qmail.h byte.h \
-fmt.h ip.h lock.h error.h exit.h open.h
+compile qmail-tcpto.c buffer_copy.h auto_qmail.h fmt.h lock.h
 	./compile qmail-tcpto.c
 
 qmail-upq: \
@@ -1162,8 +1160,7 @@ qmail.0: \
 qmail.7
 
 qmail.o: \
-compile qmail.c buffer_copy.h readwrite.h wait.h exit.h fork.h fd.h \
-qmail.h auto_qmail.h env.h
+compile qmail.c buffer_copy.h qmail.h auto_qmail.h
 	./compile qmail.c
 
 qreceipt: \
@@ -1304,7 +1301,7 @@ tcp-environ.0: \
 tcp-environ.5
 
 tcpto.o: \
-compile tcpto.c tcpto.h lock.h now.h datetime.h datetime.h
+compile tcpto.c tcpto.h lock.h
 	./compile tcpto.c
 
 tcpto_clean.o: \
