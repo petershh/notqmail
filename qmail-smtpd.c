@@ -65,12 +65,12 @@ void straynewline(void) { out("451 See https://cr.yp.to/docs/smtplf.html.\r\n");
 
 void err_bmf(void) { out("553 sorry, your envelope sender is in my badmailfrom list (#5.7.1)\r\n"); }
 void err_nogateway(void) { out("553 sorry, that domain isn't in my list of allowed rcpthosts (#5.7.1)\r\n"); }
-void err_unimpl(char *arg) { out("502 unimplemented (#5.5.1)\r\n"); }
+void err_unimpl(char *arg, void *data) { out("502 unimplemented (#5.5.1)\r\n"); }
 void err_syntax(void) { out("555 syntax error (#5.5.4)\r\n"); }
 void err_wantmail(void) { out("503 MAIL first (#5.5.1)\r\n"); }
 void err_wantrcpt(void) { out("503 RCPT first (#5.5.1)\r\n"); }
-void err_noop(char *arg) { out("250 ok\r\n"); }
-void err_vrfy(char *arg) { out("252 send some mail, i'll try my best\r\n"); }
+void err_noop(char *arg, void *data) { out("250 ok\r\n"); }
+void err_vrfy(char *arg, void *data) { out("252 send some mail, i'll try my best\r\n"); }
 void err_qqt(void) { out("451 qqt failure (#4.3.0)\r\n"); }
 
 
@@ -91,11 +91,11 @@ void smtp_greet(char *code)
   if (r <= 0 && errno == ETIMEDOUT)
     _exit(1);
 }
-void smtp_help(char *arg)
+void smtp_help(char *arg, void *data)
 {
   out("214 notqmail home page: https://notqmail.org\r\n");
 }
-void smtp_quit(char *arg)
+void smtp_quit(char *arg, void *data)
 {
   smtp_greet("221 "); out("\r\n"); flush(); _exit(0);
 }
@@ -255,22 +255,22 @@ int flagbarf; /* defined if seenmail */
 stralloc mailfrom = STRALLOC_ZERO;
 stralloc rcptto = STRALLOC_ZERO;
 
-void smtp_helo(char *arg)
+void smtp_helo(char *arg, void *data)
 {
   smtp_greet("250 "); out("\r\n");
   seenmail = 0; dohelo(arg);
 }
-void smtp_ehlo(char *arg)
+void smtp_ehlo(char *arg, void *data)
 {
   smtp_greet("250-"); out("\r\n250-PIPELINING\r\n250 8BITMIME\r\n");
   seenmail = 0; dohelo(arg);
 }
-void smtp_rset(char *arg)
+void smtp_rset(char *arg, void *data)
 {
   seenmail = 0;
   out("250 flushed\r\n");
 }
-void smtp_mail(char *arg)
+void smtp_mail(char *arg, void *data)
 {
   if (!addrparse(arg)) { err_syntax(); return; }
   flagbarf = bmfcheck();
@@ -280,7 +280,8 @@ void smtp_mail(char *arg)
   if (!stralloc_0(&mailfrom)) die_nomem();
   out("250 ok\r\n");
 }
-void smtp_rcpt(char *arg) {
+void smtp_rcpt(char *arg, void *data) {
+  (void)data;
   if (!seenmail) { err_wantmail(); return; }
   if (!addrparse(arg)) { err_syntax(); return; }
   if (flagbarf) { err_bmf(); return; }
@@ -399,7 +400,7 @@ void acceptmessage(unsigned long qp)
   out("\r\n");
 }
 
-void smtp_data(char *arg) {
+void smtp_data(char *arg, void *data) {
   int hops;
   unsigned long qp;
   char *qqx;
@@ -428,28 +429,42 @@ void smtp_data(char *arg) {
   out("\r\n");
 }
 
-struct commands smtpcommands[] = {
-  { "rcpt", smtp_rcpt, 0 }
-, { "mail", smtp_mail, 0 }
-, { "data", smtp_data, flush }
-, { "quit", smtp_quit, flush }
-, { "helo", smtp_helo, flush }
-, { "ehlo", smtp_ehlo, flush }
-, { "rset", smtp_rset, 0 }
-, { "help", smtp_help, flush }
-, { "noop", err_noop, flush }
-, { "vrfy", err_vrfy, flush }
-, { 0, err_unimpl, flush }
+struct command smtpcommands[] = {
+  { "rcpt", smtp_rcpt, 0, 0 }
+, { "mail", smtp_mail, 0, 0 }
+, { "data", smtp_data, flush, 0 }
+, { "quit", smtp_quit, flush, 0 }
+, { "helo", smtp_helo, flush, 0 }
+, { "ehlo", smtp_ehlo, flush, 0 }
+, { "rset", smtp_rset, 0, 0 }
+, { "help", smtp_help, flush, 0 }
+, { "noop", err_noop, flush, 0 }
+, { "vrfy", err_vrfy, flush, 0 }
+, { 0, err_unimpl, flush, 0 }
 } ;
 
 int main(void)
 {
+  tain now, deadline;
+  stralloc line = STRALLOC_ZERO;
   sig_ignore(SIGPIPE);
   if (chdir(auto_qmail) == -1) die_control();
   setup();
   if (ipme_init() != 1) die_ipme();
   smtp_greet("220 ");
   out(" ESMTP\r\n");
-  if (commands(&bin,&smtpcommands) == 0) die_read();
+  for (;;) {
+    int res;
+    tain_now(&now);
+    tain_addsec(&deadline, &now, 1200);
+    line.len = 0;
+    res = timed_getln(&bin, &line, '\n', &deadline, &now);
+    if (res <= 0) {
+      if (errno == ENOMEM)
+        die_nomem();
+      die_read();
+    }
+    execute_command(line.s, line.len, smtpcommands);
+  }
   die_nomem();
 }

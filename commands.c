@@ -1,50 +1,30 @@
-#include "commands.h"
+#include <stddef.h>
 
 #include <skalibs/stralloc.h>
 #include <skalibs/buffer.h>
 #include <skalibs/djbunix.h>
 #include <skalibs/bytestr.h>
 
-static stralloc cmd = STRALLOC_ZERO;
+#include "commands.h"
 
-int commands(buffer *ss, struct commands *c)
+void execute_command(char *line, size_t len, struct command const *cmds)
 {
-  unsigned int i;
+  size_t whitespace_pos, i;
   char *arg;
+  if (line[len - 1] == '\r')
+    len--;
 
-  for (;;) {
-    if (!stralloc_copys(&cmd, ""))
-      return -1;
+  line[len] = '\0';
+  whitespace_pos = str_chr(line, ' ');
+  arg = line + whitespace_pos;
+  while (*arg == ' ')
+    arg++;
 
-    for (;;) {
-      int j;
-      if (!stralloc_readyplus(&cmd, 1))
-        return -1;
-      j = buffer_get(ss, cmd.s + cmd.len, 1);
-      if (j != 1)
-        return j;
-      if (cmd.s[cmd.len] == '\n')
-        break;
-      ++cmd.len;
-    }
-
-    if (cmd.len > 0)
-      if (cmd.s[cmd.len - 1] == '\r')
-        --cmd.len;
-
-    cmd.s[cmd.len] = 0;
-
-    i = str_chr(cmd.s, ' ');
-    arg = cmd.s + i;
-    while (*arg == ' ')
-      ++arg;
-    cmd.s[i] = 0;
-
-    for (i = 0; c[i].text; ++i)
-      if (case_equals(c[i].text, cmd.s))
-        break;
-    c[i].fun(arg);
-    if (c[i].flush)
-      c[i].flush();
+  for (i = 0; cmds[i].text; i++) {
+    if (case_equalb(cmds[i].text, whitespace_pos, line))
+      break;
   }
+  cmds[i].fun(arg, cmds[i].data);
+  if (cmds[i].flush) /* TODO does it belong here? */
+    cmds[i].flush();
 }

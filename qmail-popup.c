@@ -64,10 +64,10 @@ void die_badauth(void) { err("authorization failed"); }
 
 void err_syntax(void) { err("syntax error"); }
 void err_wantuser(void) { err("USER first"); }
-void err_authoriz(char *arg) { err("authorization first"); }
+void err_authoriz(char *arg, void *data) { err("authorization first"); }
 
-void okay(char *arg) { puts("+OK \r\n"); flush(); }
-void _noreturn_ pop3_quit(char *arg) { okay(0); die(); }
+void okay(char *arg, void *data) { puts("+OK \r\n"); flush(); }
+void _noreturn_ pop3_quit(char *arg, void *data) { okay(0, 0); die(); }
 
 
 char unique[ULONG_FMT + ULONG_FMT + 3];
@@ -132,21 +132,21 @@ void pop3_greet(void)
   puts(">\r\n");
   flush();
 }
-void pop3_user(char *arg)
+void pop3_user(char *arg, void *data)
 {
   if (!*arg) { err_syntax(); return; }
-  okay(0);
+  okay(0, 0);
   seenuser = 1;
   if (!stralloc_copys(&username,arg)) die_nomem(); 
   if (!stralloc_0(&username)) die_nomem(); 
 }
-void pop3_pass(char *arg)
+void pop3_pass(char *arg, void *data)
 {
   if (!seenuser) { err_wantuser(); return; }
   if (!*arg) { err_syntax(); return; }
   doanddie(username.s,username.len,arg);
 }
-void pop3_apop(char *arg)
+void pop3_apop(char *arg, void *data)
 {
   char *space;
   space = arg + str_chr(arg,' ');
@@ -155,17 +155,19 @@ void pop3_apop(char *arg)
   doanddie(arg,space - arg,space);
 }
 
-struct commands pop3commands[] = {
-  { "user", pop3_user, 0 }
-, { "pass", pop3_pass, 0 }
-, { "apop", pop3_apop, 0 }
-, { "quit", pop3_quit, 0 }
-, { "noop", okay, 0 }
-, { 0, err_authoriz, 0 }
+struct command pop3commands[] = {
+  { "user", pop3_user, 0, 0 }
+, { "pass", pop3_pass, 0, 0 }
+, { "apop", pop3_apop, 0, 0 }
+, { "quit", pop3_quit, 0, 0 }
+, { "noop", okay, 0, 0 }
+, { 0, err_authoriz, 0, 0 }
 } ;
 
 int main(int argc, char **argv)
 {
+  tain now, deadline;
+  stralloc line = STRALLOC_ZERO;
   sig_catch(SIGALRM, die);
   sig_ignore(SIGPIPE);
  
@@ -175,6 +177,16 @@ int main(int argc, char **argv)
   if (!*childargs) die_usage();
  
   pop3_greet();
-  commands(&bin,pop3commands);
+
+  for (;;) {
+    int res;
+    tain_now(&now);
+    tain_addsec(&deadline, &now, 1200);
+    line.len = 0;
+    res = timed_getln(&bin, &line, '\n', &deadline, &now);
+    if (res <= 0)
+      die();
+    execute_command(line.s, line.len, pop3commands);
+  }
   die();
 }

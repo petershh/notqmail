@@ -24,11 +24,6 @@
 
 void die() { _exit(0); }
 
-/*
-GEN_SAFE_TIMEOUTREAD(saferead,1200,fd,die())
-GEN_SAFE_TIMEOUTWRITE(safewrite,1200,fd,die())
-*/
-
 char berrbuf[128]; /* TODO does it need to be used with unix-timed? */
 buffer berr = BUFFER_INIT(buffer_write,2,berrbuf,sizeof(berrbuf));
 
@@ -87,14 +82,14 @@ void die_root(void)
 void die_scan(void) { err("unable to scan $HOME/Maildir"); die(); }
 
 void err_syntax(void) { err("syntax error"); }
-void err_unimpl(char *arg) { err("unimplemented"); }
+void err_unimpl(char *arg, void *data) { err("unimplemented"); }
 void err_deleted(void) { err("already deleted"); }
 void err_nozero(void) { err("messages are counted from 1"); }
 void err_toobig(void) { err("not that many messages"); }
 void err_nosuch(void) { err("unable to open that message"); }
 void err_nounlink(void) { err("unable to unlink all deleted messages"); }
 
-void okay(char *arg) { timed_puts("+OK \r\n"); flush(); }
+void okay(char *arg, void *data) { timed_puts("+OK \r\n"); flush(); }
 
 void printfn(char *fn)
 {
@@ -166,7 +161,7 @@ void getlist(void)
   }
 }
 
-void pop3_stat(char *arg)
+void pop3_stat(char *arg, void *data)
 {
   unsigned int i;
   unsigned long total;
@@ -181,15 +176,15 @@ void pop3_stat(char *arg)
   flush();
 }
 
-void pop3_rset(char *arg)
+void pop3_rset(char *arg, void *data)
 {
   unsigned int i;
   for (i = 0;i < numm;++i) m[i].flagdeleted = 0;
   last = 0;
-  okay(0);
+  okay(0, 0);
 }
 
-void pop3_last(char *arg)
+void pop3_last(char *arg, void *data)
 {
   timed_puts("+OK ");
   put(strnum,uint_fmt(strnum,last));
@@ -197,7 +192,7 @@ void pop3_last(char *arg)
   flush();
 }
 
-void pop3_quit(char *arg)
+void pop3_quit(char *arg, void *data)
 {
   unsigned int i;
   for (i = 0;i < numm;++i)
@@ -212,7 +207,7 @@ void pop3_quit(char *arg)
         if (!stralloc_0(&line)) die_nomem();
         rename(m[i].fn,line.s); /* if it fails, bummer */
       }
-  okay(0);
+  okay(0, 0);
   die();
 }
 
@@ -227,14 +222,14 @@ int msgno(char *arg)
   return u;
 }
 
-void pop3_dele(char *arg)
+void pop3_dele(char *arg, void *data)
 {
   int i;
   i = msgno(arg);
   if (i == -1) return;
   m[i].flagdeleted = 1;
   if (i + 1 > last) last = i + 1;
-  okay(0);
+  okay(0, 0);
 }
 
 void list(int i, int flaguidl)
@@ -256,7 +251,7 @@ void dolisting(char *arg, int flaguidl)
     list(i,flaguidl);
   }
   else {
-    okay(0);
+    okay(0, 0);
     for (i = 0;i < numm;++i)
       if (!m[i].flagdeleted)
         list(i,flaguidl);
@@ -265,12 +260,12 @@ void dolisting(char *arg, int flaguidl)
   flush();
 }
 
-void pop3_uidl(char *arg) { dolisting(arg,1); }
-void pop3_list(char *arg) { dolisting(arg,0); }
+void pop3_uidl(char *arg, void *data) { dolisting(arg,1); }
+void pop3_list(char *arg, void *data) { dolisting(arg,0); }
 
 buffer bmsg; char bmsgbuf[1024];
 
-void pop3_top(char *arg)
+void pop3_top(char *arg, void *data)
 {
   int i;
   unsigned long limit;
@@ -285,28 +280,30 @@ void pop3_top(char *arg)
  
   fd = open_read(m[i].fn);
   if (fd == -1) { err_nosuch(); return; }
-  okay(0);
+  okay(0, 0);
   buffer_init(&bmsg, buffer_read, fd, bmsgbuf, sizeof(bmsgbuf));
   blast(&bmsg,limit);
   close(fd);
 }
 
-struct commands pop3commands[] = {
-  { "quit", pop3_quit, 0 }
-, { "stat", pop3_stat, 0 }
-, { "list", pop3_list, 0 }
-, { "uidl", pop3_uidl, 0 }
-, { "dele", pop3_dele, 0 }
-, { "retr", pop3_top, 0 }
-, { "rset", pop3_rset, 0 }
-, { "last", pop3_last, 0 }
-, { "top", pop3_top, 0 }
-, { "noop", okay, 0 }
-, { 0, err_unimpl, 0 }
+struct command pop3commands[] = {
+  { "quit", pop3_quit, 0, 0 }
+, { "stat", pop3_stat, 0, 0 }
+, { "list", pop3_list, 0, 0 }
+, { "uidl", pop3_uidl, 0, 0 }
+, { "dele", pop3_dele, 0, 0 }
+, { "retr", pop3_top, 0, 0 }
+, { "rset", pop3_rset, 0, 0 }
+, { "last", pop3_last, 0, 0 }
+, { "top", pop3_top, 0, 0 }
+, { "noop", okay, 0, 0 }
+, { 0, err_unimpl, 0, 0 }
 } ;
 
 int main(int argc, char **argv)
 {
+  tain now, deadline;
+  stralloc line = STRALLOC_ZERO;
   sig_catch(SIGALRM, die);
   sig_ignore(SIGPIPE);
  
@@ -316,7 +313,16 @@ int main(int argc, char **argv)
  
   getlist();
 
-  okay(0);
-  commands(&bin,pop3commands);
+  okay(0, 0);
+  for (;;) {
+    int res;
+    tain_now(&now);
+    tain_addsec(&deadline, &now, 1200);
+    line.len = 0;
+    res = timed_getln(&bin, &line, '\n', &deadline, &now);
+    if (res <= 0)
+      die();
+    execute_command(line.s, line.len, pop3commands);
+  }
   die();
 }
