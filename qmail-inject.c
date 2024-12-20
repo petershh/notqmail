@@ -230,6 +230,7 @@ void rwnoat(genalloc *addr)
      return;
  shift = token822_len(&defaulthost);
  if (!token822_readyplus(addr,shift)) die_nomem();
+ addr_arr = token822_s(addr);
  for (i = addr_len - 1;i >= 0;--i)
    addr_arr[i + shift] = addr_arr[i];
  addr_len += shift;
@@ -260,6 +261,7 @@ void rwnodot(genalloc *addr)
   }
  shift = token822_len(&defaultdomain);
  if (!token822_readyplus(addr,shift)) die_nomem();
+ addr_arr = token822_s(addr);
  for (i = addr_len - 1;i >= 0;--i)
    addr_arr[i + shift] = addr_arr[i];
  addr_len += shift;
@@ -283,6 +285,7 @@ void rwplus(genalloc *addr)
 
  shift = token822_len(&plusdomain);
  if (!token822_readyplus(addr,shift)) die_nomem();
+ addr_arr = token822_s(addr);
  for (i = addr_len - 1;i >= 0;--i)
    addr_arr[i + shift] = addr_arr[i];
  addr_len += shift;
@@ -448,10 +451,10 @@ void defaultfrommake(void)
  char const *fullname;
  struct token822 *df_arr;
  fullname = env_get("QMAILNAME");
- df_arr = token822_s(&df);
  if (!fullname) fullname = env_get("MAILNAME");
  if (!fullname) fullname = env_get("NAME");
  if (!token822_ready(&df,20)) die_nomem();
+ df_arr = token822_s(&df);
  token822_setlen(&df,0);
  df_arr[0].type = TOKEN822_ATOM;
  df_arr[0].s = "From";
@@ -506,7 +509,7 @@ char strnum[TAIN_FMT];
 
 void dodefaultreturnpath(void)
 {
- struct token822 *drp_arr = token822_s(&drp);
+ struct token822 *drp_arr;
  if (!stralloc_copys(&hackedruser,mailruser)) die_nomem();
  if (flaghackmess)
   {
@@ -518,6 +521,7 @@ void dodefaultreturnpath(void)
  if (flaghackrecip)
    if (!stralloc_cats(&hackedruser,"-")) die_nomem();
  if (!token822_ready(&drp,10)) die_nomem();
+ drp_arr = token822_s(&drp);
  token822_setlen(&drp, 0);
  drp_arr[token822_len(&drp)].type = TOKEN822_ATOM;
  drp_arr[token822_len(&drp)].s = "Return-Path";
