@@ -8,6 +8,7 @@
 #include <skalibs/sig.h>
 
 #include "qmail.h"
+#include "buffer_copy.h"
 
 void die_nomem() { strerr_dief1x(111, "out of memory"); }
 
