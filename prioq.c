@@ -9,6 +9,7 @@ int prioq_insert(genalloc *pq, struct prioq_elt *pe)
  int j;
  struct prioq_elt *pq_arr = genalloc_s(struct prioq_elt, pq);
  if (!genalloc_readyplus(struct prioq_elt,pq,1)) return 0;
+ pq_arr = genalloc_s(struct prioq_elt, pq);
  j = genalloc_len(struct prioq_elt, pq);
  genalloc_setlen(struct prioq_elt, pq, genalloc_len(struct prioq_elt, pq) + 1);
  while (j) {

@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include <skalibs/djbunix.h>
+#include <skalibs/lolstdio.h>
 
 #include "prot.h"
 #include "noreturn.h"
@@ -15,7 +16,9 @@ char *(qcargs[]) = { "qmail-clean", 0 };
 char *(qlargs[]) = { "qmail-lspawn", "./Mailbox", 0 };
 char *(qrargs[]) = { "qmail-rspawn", 0 };
 
-void _noreturn_ die() { _exit(111); }
+void _noreturn_ die() {
+    _exit(111);
+}
 
 int pi0[2];
 int pi1[2];

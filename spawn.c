@@ -118,7 +118,7 @@ void docmd()
   /* your security is already toast at this point. damage control... */
   { close(fdmess); err("ZSorry, message has wrong owner. (#4.3.5)\n"); return; }
 
- if (pipe(pi) == -1)
+ if (pipenb(pi) == -1)
   { close(fdmess); err("Zqmail-spawn unable to create pipe. (#4.3.0)\n"); return; }
 
  coe(pi[0]);
@@ -235,14 +235,14 @@ int main(int argc, char **argv)
 
    if (r != -1) {
      int j = 0;
-     if (flagreading)
-       if (rfds[0].revents | IOPAUSE_READ) {
-         getcmd();
+     if (flagreading) {
+         if (rfds[0].revents & IOPAUSE_READ)
+             getcmd();
          j = 1;
-       }
+     }
      for (i = 0;i < auto_spawn;++i)
        if (d[i].used) {
-         if (rfds[j].revents | IOPAUSE_READ) {
+         if (rfds[j].revents & IOPAUSE_READ) {
            r = read(d[i].fdin,inbuf,128);
            if (r == -1)
              continue; /* read error on a readable pipe? be serious */

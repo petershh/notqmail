@@ -509,8 +509,8 @@ int main(int argc, char **argv)
     char mx_name[255]; /* rfc 1035 2.3.4 */
     size_t mx_name_len;
     s6dns_message_rr_mx_t *rrs_arr;
-    genalloc mx_rrs;
-    if (!s6dns_resolve_mx_g(&mx_rrs, host.s, host.len, 0, NULL))
+    genalloc mx_rrs = GENALLOC_ZERO;
+    if (!s6dns_resolve_mx_g(&mx_rrs, host.s, host.len, 0, &tain_infinite))
       temp_dns();
     rrs_arr = genalloc_s(s6dns_message_rr_mx_t, &mx_rrs);
     for (i = 0; i < genalloc_len(s6dns_message_rr_mx_t, &mx_rrs); i++) {

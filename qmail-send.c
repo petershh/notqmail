@@ -1,6 +1,7 @@
 #include <errno.h>
-#include <unistd.h>
+#include <assert.h>
 
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -279,10 +280,9 @@ void comm_do(iopause_fd *wfds, int *j)
   int c;
   for (c = 0;c < CHANNELS;++c)
     if (flagspawnalive[c])
-      if (comm_buf[c].s && comm_buf[c].len)
-        if (wfds[*j].revents | IOPAUSE_WRITE)
+      if (comm_buf[c].s && comm_buf[c].len) {
+        if (wfds[*j].revents & IOPAUSE_WRITE)
         {
-          *j += 1;
           int w;
           int len;
           len = comm_buf[c].len;
@@ -301,6 +301,8 @@ void comm_do(iopause_fd *wfds, int *j)
               comm_buf[c].len = 0;
           }
         }
+        *j += 1;
+      }
 }
 
 
@@ -947,11 +949,12 @@ void del_do(iopause_fd *rfds, int *j)
 {
  int c;
  for (c = 0;c < CHANNELS;++c)
-   if (flagspawnalive[c])
-     if (rfds[*j].revents | IOPAUSE_READ) {
-       *j += 1;
+   if (flagspawnalive[c]) {
+     if (rfds[*j].revents & IOPAUSE_READ) {
        del_dochan(c);
      }
+     *j += 1;
+   }
 }
 
 
@@ -1550,6 +1553,7 @@ int main(void)
     pass_selprep(&wakeup);
     todo_selprep(fds + nfds, &wakeup);
     nfds++;
+    assert(nfds <= CHANNELS + CHANNELS + 1);
     cleanup_selprep(&wakeup);
 
     if (!tain_less(&recent, &wakeup)) wakeup = recent;
